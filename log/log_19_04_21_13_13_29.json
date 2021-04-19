@@ -1,0 +1,53 @@
+[
+  [
+    "04/19/21 13:03:55",
+    {
+      "IMG_PATH": "../../Dataset/images/Original_1305_image.jpg",
+      "FILTR_W": 50,
+      "FILTR_H": 50,
+      "THRESHOLD": 10,
+      "KERNEL_SIZE": 3,
+      "FILTRATION_MORPHOLOGY": 2
+    }
+  ],
+  [
+    "04/19/21 13:03:55",
+    "START PREDICT"
+  ],
+  [
+    "04/19/21 13:03:56",
+    "load_img"
+  ],
+  [
+    "04/19/21 13:06:33",
+    "normalization"
+  ],
+  [
+    "04/19/21 13:06:34",
+    "tresholding"
+  ],
+  [
+    "04/19/21 13:06:34",
+    "filtration"
+  ],
+  [
+    "04/19/21 13:06:35",
+    "labeling"
+  ],
+  [
+    "04/19/21 13:06:35",
+    "objects: 38429 -> 8625"
+  ],
+  [
+    "04/19/21 13:13:26",
+    "feture_extraction"
+  ],
+  [
+    "04/19/21 13:13:26",
+    "rgb centroid compact max_len"
+  ],
+  [
+    "04/19/21 13:13:29",
+    "END PREDICT"
+  ]
+]
