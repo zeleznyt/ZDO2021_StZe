@@ -1,0 +1,72 @@
+[
+  [
+    "04/19/21 18:53:55",
+    {
+      "IMG_NAMES": [
+        "Original_1305_image.jpg"
+      ],
+      "SCALE": 1,
+      "FILTR_W": 50,
+      "FILTR_H": 50,
+      "THRESHOLD": 10,
+      "KERNEL_SIZE": 3,
+      "FILTRATION_MORPHOLOGY": 4
+    }
+  ],
+  [
+    "04/19/21 18:53:55",
+    "START PREDICT"
+  ],
+  [
+    "04/19/21 18:53:55",
+    "load_img"
+  ],
+  [
+    "04/19/21 18:56:14",
+    "normalization"
+  ],
+  [
+    "04/19/21 18:56:14",
+    "tresholding"
+  ],
+  [
+    "04/19/21 18:56:16",
+    "filtration"
+  ],
+  [
+    "04/19/21 18:56:16",
+    "labeling"
+  ],
+  [
+    "04/19/21 18:56:16",
+    "objects: 38429 -> 2121"
+  ],
+  [
+    "04/19/21 18:57:37",
+    "feture_extraction"
+  ],
+  [
+    "04/19/21 18:57:37",
+    "rgb centroid compact max_len"
+  ],
+  [
+    "04/19/21 18:57:37",
+    "Objects detected svm : 0"
+  ],
+  [
+    "04/19/21 18:57:37",
+    "Objects detected gnb : 20"
+  ],
+  [
+    "04/19/21 18:57:37",
+    "Objects detected knn : 2"
+  ],
+  [
+    "04/19/21 18:57:37",
+    "Objects detected mlp : 5"
+  ],
+  [
+    "04/19/21 18:57:37",
+    "END PREDICT"
+  ]
+]

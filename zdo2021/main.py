@@ -11,6 +11,7 @@ import skimage.io
 import scipy.signal
 from skimage import filters, exposure, morphology
 from skimage.color import rgb2gray
+from skimage.transform import resize
 
 from sklearn import svm as svm_module
 from sklearn.naive_bayes import GaussianNB
@@ -28,14 +29,13 @@ from podpurne_funkce import prepare_ground_true_masks, merge_masks
     load_model - nacteni modelu
         odstranit modely jako navratovou hodnotu z train_models a argument z load_model
 
-    train - na vsech obrazcich
-          - separate_true_objects pred filtration, nebo po?
+    train - separate_true_objects pred filtration, nebo po?
 
     prediction - spocitat skore pres F1 - zatim jen vypis poctu detekovanych objektu
 
     ? pridat funkci pro nacteni modelu                            ?
-    ? zrychleni - zmena velikosti pred a po normalizaci osvetleni ?
-    ?           - extrakce rgb - hodně pomale                     ? 
+    ? zrychleni -  extrakce rgb - hodně pomale                      ?
+
 
     presun vsech funkci do VarroaDetector tridy - 
 """
@@ -59,13 +59,16 @@ class VarroaDetector():
 
 #---------------------------------------------------------------------------
 
+SCALE = 1
 FILTR_W = 50
 FILTR_H = 50
 THRESHOLD = 10
 KERNEL_SIZE = 3
-FILTRATION_MORPHOLOGY = 2
+FILTRATION_MORPHOLOGY = 4
 CONNECTIVITY = 2  # 1 - ctyr okoli, 2, None - osmi
-IMG_PATH = "../../Dataset/images/Original_1305_image.jpg"
+IMG_PATH = "../../Dataset/images/"
+IMG_NAMES = ["Original_1305_image.jpg"]
+#IMG_NAMES = os.listdir(IMG_PATH)
 LOG_PATH = "../log/"
 
 LOG = []
@@ -82,7 +85,7 @@ data = json.loads(data)
 def log_start():
     LOG.clear()
     now = datetime.now().strftime("%x %X")
-    setting = {'IMG_PATH': IMG_PATH, 'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
+    setting = {'IMG_NAMES': IMG_NAMES, 'SCALE': SCALE,'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
                'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY}
     LOG.append([now, setting])
 
@@ -124,13 +127,17 @@ def load_img(path):
 
 def normalization(gray_img):
     # normalizace osvětlení
-    y, x = gray_img.shape
+    y_o, x_o = gray_img.shape
+    gray_resized_img = resize(gray_img, (y_o // SCALE, x_o // SCALE), anti_aliasing=True)
+
+    y, x = gray_resized_img.shape
     kernel = np.ones([int(y / FILTR_H), int(x / FILTR_W)])
     kernel = kernel / np.sum(kernel)
-    conv_img = scipy.signal.convolve2d(gray_img, kernel, mode="same")  # 0..1
+    conv_img = scipy.signal.convolve2d(gray_resized_img, kernel, mode="same")  # 0..1
 
-    normalized_img = gray_img - conv_img
+    normalized_img = gray_resized_img - conv_img
     normalized_img = (normalized_img + 1) / 2  # 0..1
+    normalized_img = resize(normalized_img, (y_o , x_o), anti_aliasing=True)
     log_info('normalization')
     return (normalized_img, conv_img)
 
@@ -245,20 +252,22 @@ def feture_extraction(labeled_img, original_img, selected_features=[]):
 
 
 
-def predict(models):
+def predict(models, img_names):
     log_start()
     log_info('START PREDICT')
-    original_img, gray_img = load_img(IMG_PATH)
-    normalized_img, conv_img = normalization(gray_img)
-    mask_img = tresholding(normalized_img)
-    filtered_img = filtration(mask_img)
-    labeled_img = labeling(mask_img, filtered_img)
 
-    features_img = feture_extraction(labeled_img, original_img)
+    for name in img_names:
+        original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
+        normalized_img, conv_img = normalization(gray_img)
+        mask_img = tresholding(normalized_img)
+        filtered_img = filtration(mask_img)
+        labeled_img = labeling(mask_img, filtered_img)
 
-    model_names = ['svm', 'gnb', 'knn', 'mlp']
-    for i in range(len(models)):
-        print('Objects detected {} : {}'.format(model_names[i], int(np.sum(models[i].predict(features_img)))))
+        features_img = feture_extraction(labeled_img, original_img)
+
+        model_names = ['svm', 'gnb', 'knn', 'mlp']
+        for i in range(len(models)):
+            log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(models[i].predict(features_img)))))
 
     log_info('END PREDICT')
     log_save(LOG_PATH)
@@ -268,26 +277,35 @@ def predict(models):
     log_save_imgs(images, labels, LOG_PATH)
 
 
-def train():
+def train(img_names):
     log_start()
     log_info('START TRAIN')
+    features_bg = []
+    features_ob = []
 
-    m = prepare_ground_true_masks(data, 'Original_1305_image.jpg')
-    gt_mask = merge_masks(m)
-    gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
-    mask_objects_img = gt_mask
+    for name in img_names:
 
-    original_img, gray_img = load_img(IMG_PATH)
-    normalized_img, conv_img = normalization(gray_img)
-    mask_background_img = tresholding(normalized_img)
-    background_img = separate_true_objects(mask_background_img, gt_mask)
-    filtered_img = filtration(background_img)
+        m = prepare_ground_true_masks(data, name)
+        if type(m) == type(0):
+            log_info("Obrazek {} vynechan.".format(name))
+            continue
+        gt_mask = merge_masks(m)
+        gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
+        mask_objects_img = gt_mask
 
-    labeled_background_img = labeling(mask_background_img, filtered_img)
-    labeled_objects_img = labeling(mask_background_img, mask_objects_img)
 
-    features_bg = feture_extraction(labeled_background_img, original_img)
-    features_ob = feture_extraction(labeled_objects_img, original_img)
+        original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
+        normalized_img, conv_img = normalization(gray_img)
+        mask_background_img = tresholding(normalized_img)
+        background_img = separate_true_objects(mask_background_img, gt_mask)
+        filtered_img = filtration(background_img)
+
+        labeled_background_img = labeling(mask_background_img, filtered_img)
+        labeled_objects_img = labeling(mask_background_img, mask_objects_img)
+
+        features_bg = features_bg + feture_extraction(labeled_background_img, original_img)
+        features_ob = features_ob + feture_extraction(labeled_objects_img, original_img)
+
 
     (svm, gnb, knn, mlp) = train_models(features_bg, features_ob)
 
@@ -342,5 +360,5 @@ def load_model(path=''):
 
 
 if __name__ == '__main__':
-    (svm, gnb, knn, mlp) = train()
-    predict([svm, gnb, knn, mlp])
+    (svm, gnb, knn, mlp) = train(IMG_NAMES)
+    predict([svm, gnb, knn, mlp], IMG_NAMES)

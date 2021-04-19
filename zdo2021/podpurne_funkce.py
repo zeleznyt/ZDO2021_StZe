@@ -65,9 +65,9 @@ def prepare_ground_true_masks(gt_ann, filname):
             break
 
     if (im_id == -1):
-        raise Exception('No image with name {}'.format(filname))
-        # print('No image with name {}'.format(filname))
-        # return 0
+        # raise Exception('No image with name {}'.format(filname))
+        print('No image with name {}'.format(filname))
+        return 0
 
     # get image annotations
     im_annotations = []

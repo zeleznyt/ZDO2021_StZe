@@ -1,0 +1,92 @@
+[
+  [
+    "04/19/21 18:49:58",
+    {
+      "IMG_NAMES": [
+        "Original_1305_image.jpg"
+      ],
+      "SCALE": 1,
+      "FILTR_W": 50,
+      "FILTR_H": 50,
+      "THRESHOLD": 10,
+      "KERNEL_SIZE": 3,
+      "FILTRATION_MORPHOLOGY": 4
+    }
+  ],
+  [
+    "04/19/21 18:49:58",
+    "START TRAIN"
+  ],
+  [
+    "04/19/21 18:50:01",
+    "load_img"
+  ],
+  [
+    "04/19/21 18:52:21",
+    "normalization"
+  ],
+  [
+    "04/19/21 18:52:21",
+    "tresholding"
+  ],
+  [
+    "04/19/21 18:52:21",
+    "separate_true_objects"
+  ],
+  [
+    "04/19/21 18:52:22",
+    "filtration"
+  ],
+  [
+    "04/19/21 18:52:22",
+    "labeling"
+  ],
+  [
+    "04/19/21 18:52:23",
+    "objects: 38429 -> 2107"
+  ],
+  [
+    "04/19/21 18:52:23",
+    "labeling"
+  ],
+  [
+    "04/19/21 18:52:23",
+    "objects: 38429 -> 20"
+  ],
+  [
+    "04/19/21 18:53:48",
+    "feture_extraction"
+  ],
+  [
+    "04/19/21 18:53:48",
+    "rgb centroid compact max_len"
+  ],
+  [
+    "04/19/21 18:53:49",
+    "feture_extraction"
+  ],
+  [
+    "04/19/21 18:53:49",
+    "rgb centroid compact max_len"
+  ],
+  [
+    "04/19/21 18:53:50",
+    "SVM: bg = 0.0, ob = 20/20"
+  ],
+  [
+    "04/19/21 18:53:50",
+    "Bayes: bg = 15.0, ob = 20/20"
+  ],
+  [
+    "04/19/21 18:53:50",
+    "K-NN: bg = 0.0, ob = 19/20"
+  ],
+  [
+    "04/19/21 18:53:50",
+    "Multi Layer Preceptron: bg = 0.0, ob = 20/20"
+  ],
+  [
+    "04/19/21 18:53:50",
+    "END TRAIN"
+  ]
+]
