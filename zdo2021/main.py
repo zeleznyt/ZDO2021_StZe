@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import os
 import sys
 import json
+import pickle
 from datetime import datetime
 from tqdm import tqdm
 
@@ -24,10 +25,8 @@ from podpurne_funkce import prepare_ground_true_masks, merge_masks
 
 """
 ---->TODO<----
-    train_models - ukladani modelu
 
-    load_model - nacteni modelu
-        odstranit modely jako navratovou hodnotu z train_models a argument z load_model
+    load_model - odstranit modely jako navratovou hodnotu z train_models a argument z load_model
 
     train - separate_true_objects pred filtration, nebo po?
 
@@ -70,6 +69,7 @@ IMG_PATH = "../../Dataset/images/"
 IMG_NAMES = ["Original_1305_image.jpg"]
 #IMG_NAMES = os.listdir(IMG_PATH)
 LOG_PATH = "../log/"
+MODEL_PATH = "../models/"
 
 LOG = []
 
@@ -300,14 +300,14 @@ def train(img_names):
         background_img = separate_true_objects(mask_background_img, gt_mask)
         filtered_img = filtration(background_img)
 
-        labeled_background_img = labeling(mask_background_img, filtered_img)
+        labeled_background_img = labeling(mask_background_img, filtered_img, )
         labeled_objects_img = labeling(mask_background_img, mask_objects_img)
 
         features_bg = features_bg + feture_extraction(labeled_background_img, original_img)
         features_ob = features_ob + feture_extraction(labeled_objects_img, original_img)
 
 
-    (svm, gnb, knn, mlp) = train_models(features_bg, features_ob)
+    (svm, gnb, knn, mlp) = train_models(features_bg, features_ob, True)
 
     log_info('END TRAIN')
     log_save(LOG_PATH)
@@ -349,14 +349,25 @@ def train_models(fe_bg, fe_ob, save=False):
     log_info("Multi Layer Preceptron: bg = {}, ob = {}/{}".format(np.sum(mlp.predict(X_bg)), int(np.sum(mlp.predict(X_ob))), len(y_ob)))
 
     if (save):
-        pass
+        save_model(os.path.join(MODEL_PATH, 'svm.pickle'), svm)
+        save_model(os.path.join(MODEL_PATH, 'gnb.pickle'), gnb)
+        save_model(os.path.join(MODEL_PATH, 'knn.pickle'), knn)
+        save_model(os.path.join(MODEL_PATH, 'mlp.pickle'), mlp)
 
     return (svm, gnb, knn, mlp)
 
 
-def load_model(path=''):
-    if (path):
-        pass
+def save_model(path, clf):
+    model = pickle.dumps(clf)
+    with open(path, 'wb') as file:
+        pickle.dump(model, file)
+
+
+def load_model(path):
+    with open(path, 'rb') as file:
+        model = pickle.load(file)
+
+    return model
 
 
 if __name__ == '__main__':
