@@ -63,7 +63,7 @@ FILTR_W = 50
 FILTR_H = 50
 THRESHOLD = 10
 KERNEL_SIZE = 3
-FILTRATION_MORPHOLOGY = 4
+FILTRATION_MORPHOLOGY = 2
 CONNECTIVITY = 2  # 1 - ctyr okoli, 2, None - osmi
 IMG_PATH = "../../Dataset/images/"
 IMG_NAMES = ["Original_1305_image.jpg"]
@@ -211,18 +211,31 @@ def feture_extraction(labeled_img, original_img, selected_features=[]):
         obj_f = []
 
         if ('rgb' in selected_features or all):
+
             object_mask = (labeled_img == i) * 1
             object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
             y, x = object_mask.shape
             object_mask_3 = np.repeat(object_mask.reshape(y, x, 1), 3, axis=2)
             color_img = original_img[bb[0]:bb[2], bb[1]:bb[3]] * object_mask_3
+            '''
+            object_mask = (labeled_img == i) * 1
+            object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
+            y, x = object_mask.shape
+            color_img = np.zeros([y,x,3])
+            color_img[:, :, 0] = np.multiply( original_img[bb[0]:bb[2], bb[1]:bb[3], 0], object_mask)
+            color_img[:, :, 1] = np.multiply( original_img[bb[0]:bb[2], bb[1]:bb[3], 1], object_mask)
+            color_img[:, :, 2] = np.multiply( original_img[bb[0]:bb[2], bb[1]:bb[3], 2], object_mask)
+            '''
             color_r = np.mean(color_img[:, :, 0])
             color_g = np.mean(color_img[:, :, 1])
             color_b = np.mean(color_img[:, :, 2])
+            gray = np.mean(rgb2gray(color_img))
 
             obj_f.append(color_r)
             obj_f.append(color_g)
             obj_f.append(color_b)
+            obj_f.append(gray)
+
 
 
         if ('centroid' in selected_features or all):
@@ -241,6 +254,10 @@ def feture_extraction(labeled_img, original_img, selected_features=[]):
             max_len = object_prop.major_axis_length
 
             obj_f.append(max_len)
+
+        if ('convex' in selected_features or all):
+            convex = (object_prop.area**2)/object_prop.convex_area
+            obj_f.append(convex)
 
         features.append(obj_f)
 
@@ -267,6 +284,7 @@ def predict(models, img_names):
 
         model_names = ['svm', 'gnb', 'knn', 'mlp']
         for i in range(len(models)):
+            visualze_detected_objects(labeled_img, original_img, models[i].predict(features_img), name=model_names[i]+'_')
             log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(models[i].predict(features_img)))))
 
     log_info('END PREDICT')
@@ -302,6 +320,8 @@ def train(img_names):
 
         labeled_background_img = labeling(mask_background_img, filtered_img, )
         labeled_objects_img = labeling(mask_background_img, mask_objects_img)
+
+        visualze_detected_objects(labeled_objects_img, original_img, name='gt_')
 
         features_bg = features_bg + feture_extraction(labeled_background_img, original_img)
         features_ob = features_ob + feture_extraction(labeled_objects_img, original_img)
@@ -369,7 +389,48 @@ def load_model(path):
 
     return model
 
+def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
+    props = skimage.measure.regionprops(labeled_img)
+    props2 = []
+    if(len(obj) > 0):
+        for i in range(len(props)):
+            if (obj[i] == 1):
+                props2.append(props[i])
+            else:
+                props2.append([])
+        props = props2
+    else:
+        obj.append(len(props))
+
+    N = np.sum(obj)
+    if(N < 1):
+        return
+
+    plt.figure(figsize=(6 * N, 8))
+    k = 1
+    for i in range(1, len(np.unique(labeled_img))):
+        if(props[i-1]):
+            object_prop = props[i - 1]
+            bb = object_prop.bbox
+
+            object_mask = (labeled_img == i) * 1
+            object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
+            y, x = object_mask.shape
+            object_mask_3 = np.repeat(object_mask.reshape(y, x, 1), 3, axis=2)
+            color_img = original_img[bb[0]:bb[2], bb[1]:bb[3]] * object_mask_3
+
+            plt.subplot(1, N, k)
+            plt.imshow(color_img)
+            k += 1
+
+    now = datetime.now().strftime("%d_%m_%y_%H_%M_%S")
+    # plt.savefig(LOG_PATH + 'result_imgs_' + now + '.png')
+    plt.savefig(os.path.join(LOG_PATH, name + 'detected_objects_img_' + now + '.png'))
+
+
+
 
 if __name__ == '__main__':
     (svm, gnb, knn, mlp) = train(IMG_NAMES)
     predict([svm, gnb, knn, mlp], IMG_NAMES)
+
