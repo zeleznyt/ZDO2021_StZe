@@ -14,6 +14,7 @@ from skimage import filters, exposure, morphology
 from skimage.color import rgb2gray
 from skimage.transform import resize
 
+import sklearn
 from sklearn import svm as svm_module
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
@@ -65,6 +66,9 @@ THRESHOLD = 10
 KERNEL_SIZE = 3
 FILTRATION_MORPHOLOGY = 2
 CONNECTIVITY = 2  # 1 - ctyr okoli, 2, None - osmi
+SVM_KERNEL = 'linear'
+NEIGHBORS = 3
+HIDDEN_LAYERS = (4, 8, 4)
 IMG_PATH = "../../Dataset/images/"
 IMG_NAMES = ["Original_1305_image.jpg"]
 #IMG_NAMES = os.listdir(IMG_PATH)
@@ -86,7 +90,8 @@ def log_start():
     LOG.clear()
     now = datetime.now().strftime("%x %X")
     setting = {'IMG_NAMES': IMG_NAMES, 'SCALE': SCALE,'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
-               'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY}
+               'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY, 'CONNECTIVITY': CONNECTIVITY,
+               'SVM_KERNEL': SVM_KERNEL, 'NEIGHBORS': NEIGHBORS, 'HIDDEN_LAYERS': HIDDEN_LAYERS}
     LOG.append([now, setting])
 
 
@@ -357,16 +362,16 @@ def train_models(fe_bg, fe_ob, save=False):
     X = X_bg + X_ob
     y = y_bg + y_ob
 
-    svm = svm_module.SVC()  # kernel='linear'
+    svm = svm_module.SVC(kernel=SVM_KERNEL)
     svm.fit(X, y)
 
     gnb = GaussianNB()
     gnb.fit(X, y)
 
-    knn = KNeighborsClassifier(n_neighbors=2)
+    knn = KNeighborsClassifier(n_neighbors=NEIGHBORS)
     knn.fit(X, y)
 
-    mlp = MLPClassifier(alpha=1e-5, hidden_layer_sizes=(8, 4, 2), random_state=1)
+    mlp = MLPClassifier(alpha=1e-5, hidden_layer_sizes=HIDDEN_LAYERS, random_state=1)
     mlp.fit(X, y)
 
     log_info("SVM: bg = {}, ob = {}/{}".format(np.sum(svm.predict(X_bg)), int(np.sum(svm.predict(X_ob))), len(y_ob)))
@@ -436,7 +441,7 @@ def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
 
 def get_masks_from_predictions(labeled_img, obj):
     # obj = prediction_labels
-    N = np.sum(obj)
+    N = int(np.sum(obj))
     y, x = labeled_img.shape
     masks = np.zeros([y,x,N])
 
@@ -447,9 +452,36 @@ def get_masks_from_predictions(labeled_img, obj):
             k = k + 1
     return masks
 
+def split_dataset(annotations):
+    im = annotations['images']
+    im_names = []
+    im_ids = []
+
+    for i in im:
+        im_names.append(i['file_name'])
+        im_ids.append(i['id'])
+
+    #train_test_split(im_ids, test_size = 0.2)
+    val_id = [23, 4, 25, 14, 30, 16]
+    train_names = []
+    val_names = []
+
+    for i in range(len(im_ids)):
+        if im_ids[i] in val_id:
+            val_names.append(im_names[i])
+        else:
+            train_names.append(im_names[i])
+    return (train_names, val_names)
+
+
+
 
 
 if __name__ == '__main__':
+    train_names, validation_names = split_dataset(data)
+    
     (svm, gnb, knn, mlp) = train(IMG_NAMES)
     predicted_masks = predict([svm, gnb, knn, mlp], IMG_NAMES)
+
+
 
