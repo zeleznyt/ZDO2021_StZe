@@ -272,7 +272,7 @@ def feture_extraction(labeled_img, original_img, selected_features=[]):
 def predict(models, img_names):
     log_start()
     log_info('START PREDICT')
-
+    model_masks = {}
     for name in img_names:
         original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
         normalized_img, conv_img = normalization(gray_img)
@@ -283,9 +283,13 @@ def predict(models, img_names):
         features_img = feture_extraction(labeled_img, original_img)
 
         model_names = ['svm', 'gnb', 'knn', 'mlp']
+        model_masks[name] = []
         for i in range(len(models)):
-            visualze_detected_objects(labeled_img, original_img, models[i].predict(features_img), name=model_names[i]+'_')
-            log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(models[i].predict(features_img)))))
+            prediction = models[i].predict(features_img)
+            visualze_detected_objects(labeled_img, original_img, prediction, name=model_names[i]+'_')
+            masks = get_masks_from_predictions(labeled_img, prediction)
+            model_masks[name].append((model_names[i], masks))
+            log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(prediction))))
 
     log_info('END PREDICT')
     log_save(LOG_PATH)
@@ -293,6 +297,7 @@ def predict(models, img_names):
     images = [original_img, gray_img, conv_img, normalized_img, mask_img, filtered_img, labeled_img]
     labels = ['original', 'gray', 'convolution', 'normalized', 'treshold', 'filtered', 'labeled']
     log_save_imgs(images, labels, LOG_PATH)
+    return model_masks
 
 
 def train(img_names):
@@ -322,6 +327,7 @@ def train(img_names):
         labeled_objects_img = labeling(mask_background_img, mask_objects_img)
 
         visualze_detected_objects(labeled_objects_img, original_img, name='gt_')
+
 
         features_bg = features_bg + feture_extraction(labeled_background_img, original_img)
         features_ob = features_ob + feture_extraction(labeled_objects_img, original_img)
@@ -428,9 +434,22 @@ def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
     plt.savefig(os.path.join(LOG_PATH, name + 'detected_objects_img_' + now + '.png'))
 
 
+def get_masks_from_predictions(labeled_img, obj):
+    # obj = prediction_labels
+    N = np.sum(obj)
+    y, x = labeled_img.shape
+    masks = np.zeros([y,x,N])
+
+    k = 0
+    for i in range(1, len(np.unique(labeled_img))):
+        if ( obj[i-1] == 1 ):
+            masks[:,:,k] = (labeled_img == i) * 1
+            k = k + 1
+    return masks
+
 
 
 if __name__ == '__main__':
     (svm, gnb, knn, mlp) = train(IMG_NAMES)
-    predict([svm, gnb, knn, mlp], IMG_NAMES)
+    predicted_masks = predict([svm, gnb, knn, mlp], IMG_NAMES)
 
