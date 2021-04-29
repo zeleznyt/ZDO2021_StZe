@@ -20,7 +20,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 
-from podpurne_funkce import prepare_ground_true_masks, merge_masks
+from podpurne_funkce import prepare_ground_true_masks, merge_masks, f1score
 # moduly v lokálním adresáři musí být v pythonu 3 importovány s tečkou
 #from . import podpurne_funkce
 
@@ -484,4 +484,18 @@ if __name__ == '__main__':
     predicted_masks = predict([svm, gnb, knn, mlp], IMG_NAMES)
 
 
+    image_name = IMG_NAMES[0]
+    masks = prepare_ground_true_masks(data, image_name)
+    if type(masks) != type(0):
+        mm_gt = merge_masks(masks)
+        mm_gt = skimage.transform.rotate(mm_gt, -90, resize=True)
+
+        for m in predicted_masks[image_name]:
+            m_n = m[0]
+            m_p = m[1]
+
+            if(m_p.shape[2] > 0):
+                mm_pr = merge_masks(m_p)
+                sc = f1score(mm_gt, mm_pr)
+                log_info('Model {} f1 score: {}, for image {}'.format(m_n, sc, image_name))
 
