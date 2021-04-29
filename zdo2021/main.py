@@ -19,7 +19,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 
-from podpurne_funkce import prepare_ground_true_masks, merge_masks
+from podpurne_funkce import prepare_ground_true_masks, merge_masks, f1score
 # moduly v lokálním adresáři musí být v pythonu 3 importovány s tečkou
 #from . import podpurne_funkce
 
@@ -41,6 +41,7 @@ from podpurne_funkce import prepare_ground_true_masks, merge_masks
 
 #---------------------------------------------------------------------------
 
+
 class VarroaDetector():
     def __init__(self):
         pass
@@ -55,7 +56,6 @@ class VarroaDetector():
         return output
 
 
-
 #---------------------------------------------------------------------------
 
 SCALE = 1
@@ -66,13 +66,14 @@ KERNEL_SIZE = 3
 FILTRATION_MORPHOLOGY = 2
 CONNECTIVITY = 2  # 1 - ctyr okoli, 2, None - osmi
 IMG_PATH = "../../Dataset/images/"
-IMG_NAMES = ["Original_1305_image.jpg"]
+IMG_PREP_PATH = "../../Dataset/images_preprocessed/"
+IMG_NAMES = ["Original_1304_image.jpg"]
 #IMG_NAMES = os.listdir(IMG_PATH)
 LOG_PATH = "../log/"
 MODEL_PATH = "../models/"
+MODELS_USED = ['svm', 'gnb', 'knn', 'mlp']
 
 LOG = []
-
 
 ann_path = "../../Dataset/annotations/annotations.json"
 with open(ann_path, 'r') as file:
@@ -80,12 +81,10 @@ with open(ann_path, 'r') as file:
 data = json.loads(data)
 
 
-
-
 def log_start():
     LOG.clear()
     now = datetime.now().strftime("%x %X")
-    setting = {'IMG_NAMES': IMG_NAMES, 'SCALE': SCALE,'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
+    setting = {'IMG_NAMES': IMG_NAMES, 'SCALE': SCALE, 'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
                'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY}
     LOG.append([now, setting])
 
@@ -142,7 +141,7 @@ def normalization(gray_img):
     return (normalized_img, conv_img)
 
 
-def tresholding(normalized_img):
+def thresholding(normalized_img):
     # prahování, ponechat THRESHOLD/100 % nejtmavsich
     hist, bins_center = exposure.histogram(normalized_img)
     hist_sum = np.sum(hist)
@@ -154,7 +153,7 @@ def tresholding(normalized_img):
             break
 
     mask_img = normalized_img * 255 < val
-    log_info('tresholding')
+    log_info('thresholding')
     return mask_img
 
 
@@ -194,7 +193,7 @@ def separate_true_objects(mask_img, gt_mask):
     return background_img  # (background_img, objects_img)
 
 
-def feture_extraction(labeled_img, original_img, selected_features=[]):
+def feature_extraction(labeled_img, original_img, selected_features=[]):
     # extrakce priznaku
     props = skimage.measure.regionprops(labeled_img)
 
@@ -236,8 +235,6 @@ def feture_extraction(labeled_img, original_img, selected_features=[]):
             obj_f.append(color_b)
             obj_f.append(gray)
 
-
-
         if ('centroid' in selected_features or all):
             xc = object_prop.local_centroid[0]
             yc = object_prop.local_centroid[1]
@@ -261,12 +258,70 @@ def feture_extraction(labeled_img, original_img, selected_features=[]):
 
         features.append(obj_f)
 
-
-    log_info('feture_extraction')
+    log_info('feature_extraction')
     s = ' '
     log_info(s.join(selected_features))
     return features
 
+
+# def preprocess_gray_image(gray_img, name, original_img,  forced=False):
+def preprocess_gray_image(gray_img, name,  forced=False):
+
+    if not os.path.exists(os.path.join(IMG_PREP_PATH, name+'.pickle')):
+        normalized_img, conv_img = normalization(gray_img)
+        mask_img = thresholding(normalized_img)
+        filtered_img = filtration(mask_img)
+        labeled_img = labeling(mask_img, filtered_img)
+        # features_img = feature_extraction(labeled_img, original_img)
+        # return (normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img)
+        return (normalized_img, conv_img, mask_img, filtered_img, labeled_img)
+    else:
+        if not forced:
+            with open(os.path.join(IMG_PREP_PATH, name+'.pickle'), 'rb') as file:
+                pickled_data = pickle.load(file)
+            # [normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img] = (pickle.loads(pickled_data))
+            [normalized_img, conv_img, mask_img, filtered_img, labeled_img] = (pickle.loads(pickled_data))
+            log_info('preprocessed image loaded: {}'.format(name))
+
+        else:
+            normalized_img, conv_img = normalization(gray_img)
+            mask_img = thresholding(normalized_img)
+            filtered_img = filtration(mask_img)
+            labeled_img = labeling(mask_img, filtered_img)
+            # features_img = feature_extraction(labeled_img, original_img)
+
+            # pickled_data = pickle.dumps([normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img])
+            pickled_data = pickle.dumps([normalized_img, conv_img, mask_img, filtered_img, labeled_img])
+            with open(os.path.join(IMG_PREP_PATH, name+'.pickle'), 'wb') as file:
+                pickle.dump(pickled_data, file)
+            log_info('preprocessed image saved: {}'.format(name))
+
+    # return (normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img)
+    return (normalized_img, conv_img, mask_img, filtered_img, labeled_img)
+
+
+def pred2mask(prediction, labeled_img):
+    props = skimage.measure.regionprops(labeled_img)
+    result = np.zeros_like(labeled_img)
+    for iobj in range(len(props)):
+        if prediction[iobj] > 0:
+            for pixel_idx in range(np.size(props[iobj].coords, 0)):
+                x = props[iobj].coords[pixel_idx, 0]
+                y = props[iobj].coords[pixel_idx, 1]
+                result[x, y] = 1
+    return result
+
+
+def visualize_prediction(gt_mask, predicted_mask, name):
+    now = datetime.now().strftime("%d_%m_%y_%H_%M_%S")
+    plt.figure()
+
+    visualized_result = np.zeros((np.size(gt_mask, 0), np.size(gt_mask, 1), 3))
+    visualized_result[:, :, 0] = predicted_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
+    visualized_result[:, :, 1] = np.logical_and(gt_mask, predicted_mask).astype(int)
+    visualized_result[:, :, 2] = gt_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
+    plt.imshow(visualized_result)
+    plt.savefig(os.path.join(LOG_PATH, name + '_predicted_mask_img_' + now + '.png'))
 
 
 def predict(models, img_names):
@@ -275,23 +330,32 @@ def predict(models, img_names):
 
     for name in img_names:
         original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
-        normalized_img, conv_img = normalization(gray_img)
-        mask_img = tresholding(normalized_img)
-        filtered_img = filtration(mask_img)
-        labeled_img = labeling(mask_img, filtered_img)
-
-        features_img = feture_extraction(labeled_img, original_img)
+        # (normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img) = preprocess_gray_image(gray_img, name, original_img, True)
+        (normalized_img, conv_img, mask_img, filtered_img, labeled_img) = preprocess_gray_image(gray_img, name)
+        features_img = feature_extraction(labeled_img, original_img)
 
         model_names = ['svm', 'gnb', 'knn', 'mlp']
         for i in range(len(models)):
-            visualze_detected_objects(labeled_img, original_img, models[i].predict(features_img), name=model_names[i]+'_')
+            prediction = models[i].predict(features_img)
+            predicted_mask = pred2mask(prediction, labeled_img)
+
+            m = prepare_ground_true_masks(data, name)
+            if type(m) == type(0):
+                log_info("Obrazek {} vynechan.".format(name))
+                continue
+            gt_mask = merge_masks(m)
+            gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
+
+            visualize_prediction(gt_mask, predicted_mask, name+'_'+model_names[i])
+            visualze_detected_objects(labeled_img, original_img, prediction, name=model_names[i]+'_')
             log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(models[i].predict(features_img)))))
+            log_info('F1 score: {}'.format(f1score(gt_mask, predicted_mask)))
 
     log_info('END PREDICT')
     log_save(LOG_PATH)
 
     images = [original_img, gray_img, conv_img, normalized_img, mask_img, filtered_img, labeled_img]
-    labels = ['original', 'gray', 'convolution', 'normalized', 'treshold', 'filtered', 'labeled']
+    labels = ['original', 'gray', 'convolution', 'normalized', 'threshold', 'filtered', 'labeled']
     log_save_imgs(images, labels, LOG_PATH)
 
 
@@ -311,10 +375,10 @@ def train(img_names):
         gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
         mask_objects_img = gt_mask
 
-
         original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
-        normalized_img, conv_img = normalization(gray_img)
-        mask_background_img = tresholding(normalized_img)
+        (normalized_img, conv_img, mask_background_img, _, _) = preprocess_gray_image(gray_img, name)
+        # normalized_img, conv_img = normalization(gray_img)
+        # mask_background_img = thresholding(normalized_img)
         background_img = separate_true_objects(mask_background_img, gt_mask)
         filtered_img = filtration(background_img)
 
@@ -323,8 +387,8 @@ def train(img_names):
 
         visualze_detected_objects(labeled_objects_img, original_img, name='gt_')
 
-        features_bg = features_bg + feture_extraction(labeled_background_img, original_img)
-        features_ob = features_ob + feture_extraction(labeled_objects_img, original_img)
+        features_bg = features_bg + feature_extraction(labeled_background_img, original_img)
+        features_ob = features_ob + feature_extraction(labeled_objects_img, original_img)
 
 
     (svm, gnb, knn, mlp) = train_models(features_bg, features_ob, True)
@@ -389,6 +453,18 @@ def load_model(path):
 
     return model
 
+
+def load_models_from_path(path):
+    models = {}
+    for model_name in os.listdir(path):
+        models[model_name.replace('.pickle', '')] = (pickle.loads(load_model(os.path.join(path, model_name))))
+    if set(models.keys()) != set(MODELS_USED):
+        log_info('MODELS LOADED DOES NOT MATCH WITH MODELS_USED')
+        return list(models.values())
+    else:
+        return models['svm'], models['gnb'], models['knn'], models['mlp']
+
+
 def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
     props = skimage.measure.regionprops(labeled_img)
     props2 = []
@@ -428,9 +504,9 @@ def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
     plt.savefig(os.path.join(LOG_PATH, name + 'detected_objects_img_' + now + '.png'))
 
 
-
-
 if __name__ == '__main__':
-    (svm, gnb, knn, mlp) = train(IMG_NAMES)
-    predict([svm, gnb, knn, mlp], IMG_NAMES)
+    # (svm, gnb, knn, mlp) = train(IMG_NAMES)
+    (svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
+    predict([svm, gnb, knn, mlp], ["Original_1301_image.jpg", "Original_1302_image.jpg", "Original_1303_image.jpg", "Original_1304_image.jpg", "Original_1305_image.jpg"])
+    # plt.show()
 
