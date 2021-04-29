@@ -14,6 +14,7 @@ from skimage import filters, exposure, morphology
 from skimage.color import rgb2gray
 from skimage.transform import resize
 
+import sklearn
 from sklearn import svm as svm_module
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
@@ -65,6 +66,9 @@ THRESHOLD = 10
 KERNEL_SIZE = 3
 FILTRATION_MORPHOLOGY = 2
 CONNECTIVITY = 2  # 1 - ctyr okoli, 2, None - osmi
+SVM_KERNEL = 'linear'
+NEIGHBORS = 3
+HIDDEN_LAYERS = (4, 8, 4)
 IMG_PATH = "../../Dataset/images/"
 IMG_PREP_PATH = "../../Dataset/images_preprocessed/"
 IMG_NAMES = ["Original_1304_image.jpg"]
@@ -85,7 +89,8 @@ def log_start():
     LOG.clear()
     now = datetime.now().strftime("%x %X")
     setting = {'IMG_NAMES': IMG_NAMES, 'SCALE': SCALE, 'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
-               'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY}
+               'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY, 'CONNECTIVITY': CONNECTIVITY,
+               'SVM_KERNEL': SVM_KERNEL, 'NEIGHBORS': NEIGHBORS, 'HIDDEN_LAYERS': HIDDEN_LAYERS}
     LOG.append([now, setting])
 
 
@@ -327,7 +332,7 @@ def visualize_prediction(gt_mask, predicted_mask, name):
 def predict(models, img_names):
     log_start()
     log_info('START PREDICT')
-
+    model_masks = {}
     for name in img_names:
         original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
         # (normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img) = preprocess_gray_image(gray_img, name, original_img, True)
@@ -335,6 +340,7 @@ def predict(models, img_names):
         features_img = feature_extraction(labeled_img, original_img)
 
         model_names = ['svm', 'gnb', 'knn', 'mlp']
+        model_masks[name] = []
         for i in range(len(models)):
             prediction = models[i].predict(features_img)
             predicted_mask = pred2mask(prediction, labeled_img)
@@ -346,10 +352,14 @@ def predict(models, img_names):
             gt_mask = merge_masks(m)
             gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
 
+            masks = get_masks_from_predictions(labeled_img, prediction)
+            model_masks[name].append((model_names[i], masks))
+
             visualize_prediction(gt_mask, predicted_mask, name+'_'+model_names[i])
             visualze_detected_objects(labeled_img, original_img, prediction, name=model_names[i]+'_')
-            log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(models[i].predict(features_img)))))
+
             log_info('F1 score: {}'.format(f1score(gt_mask, predicted_mask)))
+            log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(prediction))))
 
     log_info('END PREDICT')
     log_save(LOG_PATH)
@@ -357,6 +367,7 @@ def predict(models, img_names):
     images = [original_img, gray_img, conv_img, normalized_img, mask_img, filtered_img, labeled_img]
     labels = ['original', 'gray', 'convolution', 'normalized', 'threshold', 'filtered', 'labeled']
     log_save_imgs(images, labels, LOG_PATH)
+    return model_masks
 
 
 def train(img_names):
@@ -415,16 +426,16 @@ def train_models(fe_bg, fe_ob, save=False):
     X = X_bg + X_ob
     y = y_bg + y_ob
 
-    svm = svm_module.SVC()  # kernel='linear'
+    svm = svm_module.SVC(kernel=SVM_KERNEL)
     svm.fit(X, y)
 
     gnb = GaussianNB()
     gnb.fit(X, y)
 
-    knn = KNeighborsClassifier(n_neighbors=2)
+    knn = KNeighborsClassifier(n_neighbors=NEIGHBORS)
     knn.fit(X, y)
 
-    mlp = MLPClassifier(alpha=1e-5, hidden_layer_sizes=(8, 4, 2), random_state=1)
+    mlp = MLPClassifier(alpha=1e-5, hidden_layer_sizes=HIDDEN_LAYERS, random_state=1)
     mlp.fit(X, y)
 
     log_info("SVM: bg = {}, ob = {}/{}".format(np.sum(svm.predict(X_bg)), int(np.sum(svm.predict(X_ob))), len(y_ob)))
@@ -504,9 +515,50 @@ def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
     plt.savefig(os.path.join(LOG_PATH, name + 'detected_objects_img_' + now + '.png'))
 
 
+def get_masks_from_predictions(labeled_img, obj):
+    # obj = prediction_labels
+    N = int(np.sum(obj))
+    y, x = labeled_img.shape
+    masks = np.zeros([y,x,N])
+
+    k = 0
+    for i in range(1, len(np.unique(labeled_img))):
+        if ( obj[i-1] == 1 ):
+            masks[:,:,k] = (labeled_img == i) * 1
+            k = k + 1
+    return masks
+
+def split_dataset(annotations):
+    im = annotations['images']
+    im_names = []
+    im_ids = []
+
+    for i in im:
+        im_names.append(i['file_name'])
+        im_ids.append(i['id'])
+
+    #train_test_split(im_ids, test_size = 0.2)
+    val_id = [23, 4, 25, 14, 30, 16]
+    train_names = []
+    val_names = []
+
+    for i in range(len(im_ids)):
+        if im_ids[i] in val_id:
+            val_names.append(im_names[i])
+        else:
+            train_names.append(im_names[i])
+    return (train_names, val_names)
+
+
+
+
+
 if __name__ == '__main__':
-    # (svm, gnb, knn, mlp) = train(IMG_NAMES)
-    (svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
-    predict([svm, gnb, knn, mlp], ["Original_1301_image.jpg", "Original_1302_image.jpg", "Original_1303_image.jpg", "Original_1304_image.jpg", "Original_1305_image.jpg"])
-    # plt.show()
+    train_names, validation_names = split_dataset(data)
+
+    (svm, gnb, knn, mlp) = train(IMG_NAMES)
+    # (svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
+    predicted_masks = predict([svm, gnb, knn, mlp], IMG_NAMES)
+
+
 
