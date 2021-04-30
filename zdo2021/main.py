@@ -536,6 +536,26 @@ def split_dataset(annotations):
     return (train_names, val_names)
 
 
+def evaluate(predicted_masks):
+    for image_name in predicted_masks.keys():
+        print(image_name)
+        masks = prepare_ground_true_masks(data, image_name)
+        if type(masks) != type(0):
+            mm_gt = merge_masks(masks)
+            mm_gt = skimage.transform.rotate(mm_gt, -90, resize=True)
+
+            for m in predicted_masks[image_name]:
+                m_n = m[0]
+                m_p = m[1]
+
+                if (m_p.shape[2] > 0):
+                    mm_pr = merge_masks(m_p)
+                    sco = f1score(mm_gt, mm_pr)
+                    scb = f1score(1-mm_gt, 1-mm_pr)
+                    print(sco)
+                    print(scb)
+                    sc = (sco+scb)/2
+                    log_info('Model {} f1 score: {}, for image {}'.format(m_n, sc, image_name))
 
 
 
@@ -545,20 +565,5 @@ if __name__ == '__main__':
     (svm, gnb, knn, mlp) = train(IMG_NAMES)
     # (svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
     predicted_masks = predict([svm, gnb, knn, mlp], IMG_NAMES)
-
-
-    image_name = IMG_NAMES[0]
-    masks = prepare_ground_true_masks(data, image_name)
-    if type(masks) != type(0):
-        mm_gt = merge_masks(masks)
-        mm_gt = skimage.transform.rotate(mm_gt, -90, resize=True)
-
-        for m in predicted_masks[image_name]:
-            m_n = m[0]
-            m_p = m[1]
-
-            if(m_p.shape[2] > 0):
-                mm_pr = merge_masks(m_p)
-                sc = f1score(mm_gt, mm_pr)
-                log_info('Model {} f1 score: {}, for image {}'.format(m_n, sc, image_name))
+    evaluate(predicted_masks)
 
