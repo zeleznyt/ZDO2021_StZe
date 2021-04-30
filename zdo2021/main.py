@@ -65,13 +65,12 @@ FILTR_H = 50
 THRESHOLD = 10
 KERNEL_SIZE = 3
 FILTRATION_MORPHOLOGY = 2
-CONNECTIVITY = 2  # 1 - ctyr okoli, 2, None - osmi
 SVM_KERNEL = 'linear'
 NEIGHBORS = 3
 HIDDEN_LAYERS = (4, 8, 4)
 IMG_PATH = "../../Dataset/images/"
 IMG_PREP_PATH = "../../Dataset/images_preprocessed/"
-IMG_NAMES = ["Original_1304_image.jpg"]
+IMG_NAMES = ["Original_1305_image.jpg"]
 #IMG_NAMES = os.listdir(IMG_PATH)
 LOG_PATH = "../log/"
 MODEL_PATH = "../models/"
@@ -89,7 +88,7 @@ def log_start():
     LOG.clear()
     now = datetime.now().strftime("%x %X")
     setting = {'IMG_NAMES': IMG_NAMES, 'SCALE': SCALE, 'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
-               'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY, 'CONNECTIVITY': CONNECTIVITY,
+               'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY,
                'SVM_KERNEL': SVM_KERNEL, 'NEIGHBORS': NEIGHBORS, 'HIDDEN_LAYERS': HIDDEN_LAYERS}
     LOG.append([now, setting])
 
@@ -183,8 +182,8 @@ def filtration(mask_img):
 
 def labeling(mask_img, filtered_img):
     # "obarveni"
-    labels_b_f = skimage.measure.label(mask_img, background=0, connectivity=CONNECTIVITY)
-    labels = skimage.measure.label(filtered_img, background=0, connectivity=CONNECTIVITY)
+    labels_b_f = skimage.measure.label(mask_img, background=0)
+    labels = skimage.measure.label(filtered_img, background=0)
 
     log_info('labeling')
     log_info('objects: {} -> {}'.format(len(np.unique(labels_b_f)) - 1, len(np.unique(labels)) - 1))
@@ -305,16 +304,6 @@ def preprocess_gray_image(gray_img, name,  forced=False):
     return (normalized_img, conv_img, mask_img, filtered_img, labeled_img)
 
 
-def pred2mask(prediction, labeled_img):
-    props = skimage.measure.regionprops(labeled_img)
-    result = np.zeros_like(labeled_img)
-    for iobj in range(len(props)):
-        if prediction[iobj] > 0:
-            for pixel_idx in range(np.size(props[iobj].coords, 0)):
-                x = props[iobj].coords[pixel_idx, 0]
-                y = props[iobj].coords[pixel_idx, 1]
-                result[x, y] = 1
-    return result
 
 
 def visualize_prediction(gt_mask, predicted_mask, name):
@@ -343,22 +332,19 @@ def predict(models, img_names):
         model_masks[name] = []
         for i in range(len(models)):
             prediction = models[i].predict(features_img)
-            predicted_mask = pred2mask(prediction, labeled_img)
-
-            m = prepare_ground_true_masks(data, name)
-            if type(m) == type(0):
-                log_info("Obrazek {} vynechan.".format(name))
-                continue
-            gt_mask = merge_masks(m)
-            gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
 
             masks = get_masks_from_predictions(labeled_img, prediction)
             model_masks[name].append((model_names[i], masks))
 
-            visualize_prediction(gt_mask, predicted_mask, name+'_'+model_names[i])
+            m = prepare_ground_true_masks(data, name)
+            if type(m) == type(0) or masks.shape[2] == 0:
+                log_info("Obrazek {} vynechan.".format(name))
+                continue
+            gt_mask = merge_masks(m)
+            gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
+            visualize_prediction(gt_mask, merge_masks(masks), name+'_'+model_names[i])
             visualze_detected_objects(labeled_img, original_img, prediction, name=model_names[i]+'_')
 
-            log_info('F1 score: {}'.format(f1score(gt_mask, predicted_mask)))
             log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(prediction))))
 
     log_info('END PREDICT')

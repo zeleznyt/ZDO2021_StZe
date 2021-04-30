@@ -1,6 +1,6 @@
 [
   [
-    "04/29/21 12:22:35",
+    "04/30/21 11:43:55",
     {
       "IMG_NAMES": [
         "Original_1305_image.jpg"
@@ -11,7 +11,6 @@
       "THRESHOLD": 10,
       "KERNEL_SIZE": 3,
       "FILTRATION_MORPHOLOGY": 2,
-      "CONNECTIVITY": 2,
       "SVM_KERNEL": "linear",
       "NEIGHBORS": 3,
       "HIDDEN_LAYERS": [
@@ -22,59 +21,59 @@
     }
   ],
   [
-    "04/29/21 12:22:35",
+    "04/30/21 11:43:55",
     "START PREDICT"
   ],
   [
-    "04/29/21 12:22:36",
+    "04/30/21 11:43:55",
     "load_img"
   ],
   [
-    "04/29/21 12:24:53",
+    "04/30/21 11:46:12",
     "normalization"
   ],
   [
-    "04/29/21 12:24:53",
-    "tresholding"
+    "04/30/21 11:46:12",
+    "thresholding"
   ],
   [
-    "04/29/21 12:24:54",
+    "04/30/21 11:46:13",
     "filtration"
   ],
   [
-    "04/29/21 12:24:54",
+    "04/30/21 11:46:13",
     "labeling"
   ],
   [
-    "04/29/21 12:24:54",
+    "04/30/21 11:46:13",
     "objects: 38429 -> 8625"
   ],
   [
-    "04/29/21 12:30:30",
-    "feture_extraction"
+    "04/30/21 11:51:33",
+    "feature_extraction"
   ],
   [
-    "04/29/21 12:30:30",
+    "04/30/21 11:51:33",
     "rgb centroid compact max_len"
   ],
   [
-    "04/29/21 12:30:32",
+    "04/30/21 11:51:39",
     "Objects detected svm : 4"
   ],
   [
-    "04/29/21 12:30:34",
+    "04/30/21 11:51:47",
     "Objects detected gnb : 7"
   ],
   [
-    "04/29/21 12:30:36",
+    "04/30/21 11:51:53",
     "Objects detected knn : 5"
   ],
   [
-    "04/29/21 12:30:36",
-    "Objects detected mlp : 0"
+    "04/30/21 11:51:54",
+    "Obrazek Original_1305_image.jpg vynechan."
   ],
   [
-    "04/29/21 12:30:36",
+    "04/30/21 11:51:54",
     "END PREDICT"
   ]
 ]
