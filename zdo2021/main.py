@@ -59,19 +59,20 @@ class VarroaDetector():
 
 #---------------------------------------------------------------------------
 
-SCALE = 1
+SCALE = 4
 FILTR_W = 50
 FILTR_H = 50
 THRESHOLD = 10
 KERNEL_SIZE = 3
-FILTRATION_MORPHOLOGY = 2
+FILTRATION_MORPHOLOGY = 3
 SVM_KERNEL = 'linear'
-NEIGHBORS = 3
+NEIGHBORS = 5
 HIDDEN_LAYERS = (4, 8, 4)
+FEATURES = []
 IMG_PATH = "../../Dataset/images/"
 IMG_PREP_PATH = "../../Dataset/images_preprocessed/"
-IMG_NAMES = ["Original_1305_image.jpg"]
-#IMG_NAMES = os.listdir(IMG_PATH)
+#IMG_NAMES = ["Original_1305_image.jpg"]
+IMG_NAMES = os.listdir(IMG_PATH)
 LOG_PATH = "../log/"
 MODEL_PATH = "../models/"
 MODELS_USED = ['svm', 'gnb', 'knn', 'mlp']
@@ -89,7 +90,7 @@ def log_start():
     now = datetime.now().strftime("%x %X")
     setting = {'IMG_NAMES': IMG_NAMES, 'SCALE': SCALE, 'FILTR_W': FILTR_W, 'FILTR_H': FILTR_H, 'THRESHOLD': THRESHOLD,
                'KERNEL_SIZE': KERNEL_SIZE, 'FILTRATION_MORPHOLOGY': FILTRATION_MORPHOLOGY,
-               'SVM_KERNEL': SVM_KERNEL, 'NEIGHBORS': NEIGHBORS, 'HIDDEN_LAYERS': HIDDEN_LAYERS}
+               'SVM_KERNEL': SVM_KERNEL, 'NEIGHBORS': NEIGHBORS, 'HIDDEN_LAYERS': HIDDEN_LAYERS, 'FEATURES' : FEATURES}
     LOG.append([now, setting])
 
 
@@ -134,13 +135,15 @@ def normalization(gray_img):
     gray_resized_img = resize(gray_img, (y_o // SCALE, x_o // SCALE), anti_aliasing=True)
 
     y, x = gray_resized_img.shape
+
     kernel = np.ones([int(y / FILTR_H), int(x / FILTR_W)])
     kernel = kernel / np.sum(kernel)
     conv_img = scipy.signal.convolve2d(gray_resized_img, kernel, mode="same")  # 0..1
 
-    normalized_img = gray_resized_img - conv_img
+    conv_img = resize(conv_img, (y_o , x_o), anti_aliasing=True)
+    normalized_img = gray_img - conv_img
     normalized_img = (normalized_img + 1) / 2  # 0..1
-    normalized_img = resize(normalized_img, (y_o , x_o), anti_aliasing=True)
+
     log_info('normalization')
     return (normalized_img, conv_img)
 
@@ -204,7 +207,6 @@ def feature_extraction(labeled_img, original_img, selected_features=[]):
     features = []
     all = False
     if not selected_features:
-        selected_features = ['rgb', 'centroid', 'compact', 'max_len']
         all = True
 
     # for i in range(1, len(np.unique(labeled_img)) ):
@@ -264,7 +266,10 @@ def feature_extraction(labeled_img, original_img, selected_features=[]):
 
     log_info('feature_extraction')
     s = ' '
-    log_info(s.join(selected_features))
+    if all:
+        log_info(s.join(selected_features))
+    else:
+        log_info('all')
     return features
 
 
@@ -318,42 +323,38 @@ def visualize_prediction(gt_mask, predicted_mask, name):
     plt.savefig(os.path.join(LOG_PATH, name + '_predicted_mask_img_' + now + '.png'))
 
 
-def predict(models, img_names):
-    log_start()
-    log_info('START PREDICT')
-    model_masks = {}
-    for name in img_names:
-        original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
-        # (normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img) = preprocess_gray_image(gray_img, name, original_img, True)
-        (normalized_img, conv_img, mask_img, filtered_img, labeled_img) = preprocess_gray_image(gray_img, name)
-        features_img = feature_extraction(labeled_img, original_img)
+def predict(models, name):
 
-        model_names = ['svm', 'gnb', 'knn', 'mlp']
-        model_masks[name] = []
-        for i in range(len(models)):
-            prediction = models[i].predict(features_img)
 
-            masks = get_masks_from_predictions(labeled_img, prediction)
-            model_masks[name].append((model_names[i], masks))
+    original_img, gray_img = load_img(os.path.join(IMG_PATH, name))
+    # (normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img) = preprocess_gray_image(gray_img, name, original_img, True)
+    (normalized_img, conv_img, mask_img, filtered_img, labeled_img) = preprocess_gray_image(gray_img, name)
+    features_img = feature_extraction(labeled_img, original_img, FEATURES)
 
-            m = prepare_ground_true_masks(data, name)
-            if type(m) == type(0) or masks.shape[2] == 0:
-                log_info("Obrazek {} vynechan.".format(name))
-                continue
-            gt_mask = merge_masks(m)
-            gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
-            visualize_prediction(gt_mask, merge_masks(masks), name+'_'+model_names[i])
-            visualze_detected_objects(labeled_img, original_img, prediction, name=model_names[i]+'_')
+    masks = []
+    model_names = ['svm', 'gnb', 'knn', 'mlp']
+    for ind, model in enumerate(models):
+        model_name = model_names[ind]
+        prediction = model.predict(features_img)
+        mask = get_masks_from_predictions(labeled_img, prediction)
+        log_info('Model {}, Objects detected : {}'.format(model_name, int(np.sum(prediction))))
+        masks.append((model_name, mask))
 
-            log_info('Objects detected {} : {}'.format(model_names[i], int(np.sum(prediction))))
 
-    log_info('END PREDICT')
-    log_save(LOG_PATH)
+        #visualize_prediction(gt_mask, mask, name+'_'+model_names[i])
+        visualze_detected_objects(labeled_img, original_img, prediction, name=model_name + '_' + name)
 
+
+
+
+
+    '''
     images = [original_img, gray_img, conv_img, normalized_img, mask_img, filtered_img, labeled_img]
     labels = ['original', 'gray', 'convolution', 'normalized', 'threshold', 'filtered', 'labeled']
     log_save_imgs(images, labels, LOG_PATH)
-    return model_masks
+    '''
+
+    return masks
 
 
 def train(img_names):
@@ -368,6 +369,7 @@ def train(img_names):
         if type(m) == type(0):
             log_info("Obrazek {} vynechan.".format(name))
             continue
+        log_info("{}".format(name))
         gt_mask = merge_masks(m)
         gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
         mask_objects_img = gt_mask
@@ -381,11 +383,10 @@ def train(img_names):
 
         labeled_background_img = labeling(mask_background_img, filtered_img, )
         labeled_objects_img = labeling(mask_background_img, mask_objects_img)
+        visualze_detected_objects(labeled_objects_img, original_img, [], name='gt_' + name)
 
-        visualze_detected_objects(labeled_objects_img, original_img, name='gt_')
-
-        features_bg = features_bg + feature_extraction(labeled_background_img, original_img)
-        features_ob = features_ob + feature_extraction(labeled_objects_img, original_img)
+        features_bg = features_bg + feature_extraction(labeled_background_img, original_img, FEATURES)
+        features_ob = features_ob + feature_extraction(labeled_objects_img, original_img, FEATURES)
 
 
     (svm, gnb, knn, mlp) = train_models(features_bg, features_ob, True)
@@ -430,6 +431,7 @@ def train_models(fe_bg, fe_ob, save=False):
     log_info("Multi Layer Preceptron: bg = {}, ob = {}/{}".format(np.sum(mlp.predict(X_bg)), int(np.sum(mlp.predict(X_ob))), len(y_ob)))
 
     if (save):
+        now = datetime.now().strftime("_%d_%m_%y_%H_%M_%S")
         save_model(os.path.join(MODEL_PATH, 'svm.pickle'), svm)
         save_model(os.path.join(MODEL_PATH, 'gnb.pickle'), gnb)
         save_model(os.path.join(MODEL_PATH, 'knn.pickle'), knn)
@@ -478,6 +480,8 @@ def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
     N = np.sum(obj)
     if(N < 1):
         return
+    if(N > 20):
+        return
 
     plt.figure(figsize=(6 * N, 8))
     k = 1
@@ -501,18 +505,21 @@ def visualze_detected_objects(labeled_img, original_img, obj=[], name=''):
     plt.savefig(os.path.join(LOG_PATH, name + 'detected_objects_img_' + now + '.png'))
 
 
-def get_masks_from_predictions(labeled_img, obj):
-    # obj = prediction_labels
-    N = int(np.sum(obj))
-    y, x = labeled_img.shape
-    masks = np.zeros([y,x,N])
+def get_masks_from_predictions(labeled_img, labels):
+    N = int(np.sum(labels))
+    if(N == 0):
+        y, x = labeled_img.shape
+        mask = np.zeros([y, x])
+        return mask
 
-    k = 0
+    y, x = labeled_img.shape
+    mask = np.zeros([y,x])
+
     for i in range(1, len(np.unique(labeled_img))):
-        if ( obj[i-1] == 1 ):
-            masks[:,:,k] = (labeled_img == i) * 1
-            k = k + 1
-    return masks
+        if ( labels[i-1] == 1 ):
+            mask = np.add(mask, (labeled_img == i) * 1)
+
+    return mask
 
 def split_dataset(annotations):
     im = annotations['images']
@@ -536,34 +543,79 @@ def split_dataset(annotations):
     return (train_names, val_names)
 
 
-def evaluate(predicted_masks):
-    for image_name in predicted_masks.keys():
-        print(image_name)
-        masks = prepare_ground_true_masks(data, image_name)
-        if type(masks) != type(0):
-            mm_gt = merge_masks(masks)
-            mm_gt = skimage.transform.rotate(mm_gt, -90, resize=True)
+def evaluate(predicted_mask, image_name):
+    gt = prepare_ground_true_masks(data, image_name)
+    if type(gt) == type(0):
+        mm_gt = zeros(predicted_mask.shape)
+    else:
+        mm_gt = merge_masks(gt)
+        mm_gt = skimage.transform.rotate(mm_gt, -90, resize=True)
 
-            for m in predicted_masks[image_name]:
-                m_n = m[0]
-                m_p = m[1]
+    mm_pr = merge_masks(predicted_mask)
+    sco = f1score(mm_gt, mm_pr)
+    scb = f1score(1-mm_gt, 1-mm_pr)
+    sc = (sco+scb)/2
 
-                if (m_p.shape[2] > 0):
-                    mm_pr = merge_masks(m_p)
-                    sco = f1score(mm_gt, mm_pr)
-                    scb = f1score(1-mm_gt, 1-mm_pr)
-                    print(sco)
-                    print(scb)
-                    sc = (sco+scb)/2
-                    log_info('Model {} f1 score: {}, for image {}'.format(m_n, sc, image_name))
+    return sc
 
 
 
 if __name__ == '__main__':
+    #split dataset
     train_names, validation_names = split_dataset(data)
 
+    #start training
+    IMG_NAMES = train_names
     (svm, gnb, knn, mlp) = train(IMG_NAMES)
-    # (svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
-    predicted_masks = predict([svm, gnb, knn, mlp], IMG_NAMES)
-    evaluate(predicted_masks)
+    #(svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
+
+
+    model_names = ['svm', 'gnb', 'knn', 'mlp']
+    models = [svm, gnb, knn, mlp]
+
+    #predict on training set
+    log_start()
+    log_info('START PREDICT')
+
+    training_score = dict.fromkeys(model_names, 0)
+    for name in IMG_NAMES:
+        masks = predict(models, name)
+        for m in range(len(masks)):
+            model_name = masks[m][0]
+            mask = masks[m][1]
+            score = evaluate(mask, name)
+            training_score[model_name] += score
+            log_info('Image {}, Model {}, F1 score {}'.format(name, model_name, score))
+        break
+    for k in training_score:
+        f1 = training_score[k]/len(IMG_NAMES)
+        log_info('Training set, model {}, F1 score {}'.format(k, f1))
+
+    log_info('END PREDICT')
+    log_save(LOG_PATH)
+
+
+    #predict on validation set
+    IMG_NAMES = validation_names
+    log_start()
+    log_info('START PREDICT Validation set')
+
+    validation_score = dict.fromkeys(model_names, 0)
+    for name in IMG_NAMES:
+        masks = predict(models, name)
+        for m in range(len(masks)):
+            model_name = masks[m][0]
+            mask = masks[m][1]
+            score = evaluate(mask, name)
+            validation_score[model_name] += score
+            log_info('Image {}, Model {}, F1 score {}:'.format(name, model_name, score))
+            print('Image {}, Model {}, F1 score {}:'.format(name, model_name, score))
+
+    for k in validation_score:
+        f1 = validation_score[k]/len(IMG_NAMES)
+        log_info('Validation set, model {}, F1 score {}:'.format(k, f1))
+
+    log_info('END PREDICT')
+    log_save(LOG_PATH)
+
 

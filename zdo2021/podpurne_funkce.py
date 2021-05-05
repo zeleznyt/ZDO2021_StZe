@@ -78,7 +78,8 @@ def prepare_ground_true_masks(gt_ann, filname):
     if (len(im_annotations) == 0):
         # raise Exception('No annotations for image with name {}'.format(filname))
         print('No annotations for image with name {}'.format(filname))
-        return 0
+        masks = np.zeros((height, width, 1))
+        return masks
 
     # mask for every object
     # bg = 0, obj = 1
@@ -96,6 +97,8 @@ def prepare_ground_true_masks(gt_ann, filname):
 
 
 def merge_masks(masks):
+    if len(masks.shape) < 3:
+        return masks
     MASK = np.zeros(masks[:, :, 0].shape)
 
     for i in range(masks.shape[2]):
