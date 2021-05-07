@@ -231,10 +231,11 @@ def feature_extraction(labeled_img, original_img, selected_features=[]):
             color_img[:, :, 1] = np.multiply( original_img[bb[0]:bb[2], bb[1]:bb[3], 1], object_mask)
             color_img[:, :, 2] = np.multiply( original_img[bb[0]:bb[2], bb[1]:bb[3], 2], object_mask)
             '''
-            color_r = np.mean(color_img[:, :, 0])
-            color_g = np.mean(color_img[:, :, 1])
-            color_b = np.mean(color_img[:, :, 2])
-            gray = np.mean(rgb2gray(color_img))
+            color_r = np.mean(color_img[:, :, 0])/255
+            color_g = np.mean(color_img[:, :, 1])/255
+            color_b = np.mean(color_img[:, :, 2])/255
+            gray = np.mean(rgb2gray(color_img/255))
+
 
             obj_f.append(color_r)
             obj_f.append(color_g)
@@ -259,7 +260,7 @@ def feature_extraction(labeled_img, original_img, selected_features=[]):
             obj_f.append(max_len)
 
         if ('convex' in selected_features or all):
-            convex = (object_prop.area**2)/object_prop.convex_area
+            convex = (object_prop.area)/object_prop.convex_area
             obj_f.append(convex)
 
         features.append(obj_f)
@@ -387,6 +388,8 @@ def train(img_names):
 
         features_bg = features_bg + feature_extraction(labeled_background_img, original_img, FEATURES)
         features_ob = features_ob + feature_extraction(labeled_objects_img, original_img, FEATURES)
+        print(features_bg[0])
+        print(features_ob[0])
 
 
     (svm, gnb, knn, mlp) = train_models(features_bg, features_ob, True)
@@ -566,6 +569,7 @@ if __name__ == '__main__':
 
     #start training
     IMG_NAMES = train_names
+    IMG_NAMES = ["Original_1305_image.jpg"]
     (svm, gnb, knn, mlp) = train(IMG_NAMES)
     #(svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
 
