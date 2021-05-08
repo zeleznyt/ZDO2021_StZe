@@ -19,6 +19,7 @@ from sklearn import svm as svm_module
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
+from skimage.filters import threshold_otsu
 
 from podpurne_funkce import prepare_ground_true_masks, merge_masks, f1score
 # moduly v lokálním adresáři musí být v pythonu 3 importovány s tečkou
@@ -149,17 +150,23 @@ def normalization(gray_img):
 
 
 def thresholding(normalized_img):
-    # prahování, ponechat THRESHOLD/100 % nejtmavsich
-    hist, bins_center = exposure.histogram(normalized_img)
-    hist_sum = np.sum(hist)
+    if(THRESHOLD > 0):
+        # prahování, ponechat THRESHOLD/100 % nejtmavsich
+        hist, bins_center = exposure.histogram(normalized_img)
+        hist_sum = np.sum(hist)
 
-    for i in range(len(hist)):
-        start_hist_sum = np.sum(hist[0:i])
-        if (start_hist_sum / hist_sum > THRESHOLD / 100):
-            val = i - 1
-            break
+        for i in range(len(hist)):
+            start_hist_sum = np.sum(hist[0:i])
+            if (start_hist_sum / hist_sum > THRESHOLD / 100):
+                val = i - 1
+                break
+        mask_img = normalized_img * 255 < val
+        
+    else:
+        val = threshold_otsu(normalized_img*255)
+        mask_img = normalized_img * 255 < val
 
-    mask_img = normalized_img * 255 < val
+
     log_info('thresholding')
     return mask_img
 
@@ -567,9 +574,10 @@ if __name__ == '__main__':
     #split dataset
     train_names, validation_names = split_dataset(data)
 
+
     #start training
     IMG_NAMES = train_names
-    IMG_NAMES = ["Original_1305_image.jpg"]
+    #IMG_NAMES = ["Original_1305_image.jpg"]
     (svm, gnb, knn, mlp) = train(IMG_NAMES)
     #(svm, gnb, knn, mlp) = load_models_from_path(MODEL_PATH)
 
@@ -621,5 +629,3 @@ if __name__ == '__main__':
 
     log_info('END PREDICT')
     log_save(LOG_PATH)
-
-
