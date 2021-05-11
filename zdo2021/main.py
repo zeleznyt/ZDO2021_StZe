@@ -85,6 +85,9 @@ with open(ann_path, 'r') as file:
     data = file.read()
 data = json.loads(data)
 
+with open('features_moments.pickle', 'rb') as file:
+    features_moments = pickle.load(file)
+
 
 def log_start():
     LOG.clear()
@@ -243,32 +246,31 @@ def feature_extraction(labeled_img, original_img, selected_features=[]):
             color_b = np.mean(color_img[:, :, 2])/255
             gray = np.mean(rgb2gray(color_img/255))
 
-
-            obj_f.append(color_r)
-            obj_f.append(color_g)
-            obj_f.append(color_b)
-            obj_f.append(gray)
+            obj_f.append((color_r-features_moments['color_r'][0])/features_moments['color_r'][1])
+            obj_f.append((color_g-features_moments['color_g'][0])/features_moments['color_g'][1])
+            obj_f.append((color_b-features_moments['color_b'][0])/features_moments['color_b'][1])
+            obj_f.append((gray-features_moments['gray'][0])/features_moments['gray'][1])
 
         if ('centroid' in selected_features or all):
             xc = object_prop.local_centroid[0]
             yc = object_prop.local_centroid[1]
 
-            obj_f.append(xc)
-            obj_f.append(yc)
+            obj_f.append((xc-features_moments['xc'][0])/features_moments['xc'][1])
+            obj_f.append((yc-features_moments['yc'][0])/features_moments['yc'][1])
 
         if ('compact' in selected_features or all):
             compact = (object_prop.perimeter ** 2) / object_prop.area
 
-            obj_f.append(compact)
+            obj_f.append((compact-features_moments['compact'][0])/features_moments['compact'][1])
 
         if ('max_len' in selected_features or all):
             max_len = object_prop.major_axis_length
 
-            obj_f.append(max_len)
+            obj_f.append((max_len-features_moments['max_len'][0])/features_moments['max_len'][1])
 
         if ('convex' in selected_features or all):
             convex = (object_prop.area)/object_prop.convex_area
-            obj_f.append(convex)
+            obj_f.append((convex-features_moments['convex'][0])/features_moments['convex'][1])
 
         features.append(obj_f)
 
@@ -315,8 +317,6 @@ def preprocess_gray_image(gray_img, name,  forced=False):
 
     # return (normalized_img, conv_img, mask_img, filtered_img, labeled_img, features_img)
     return (normalized_img, conv_img, mask_img, filtered_img, labeled_img)
-
-
 
 
 def visualize_prediction(gt_mask, predicted_mask, name):
@@ -531,6 +531,7 @@ def get_masks_from_predictions(labeled_img, labels):
 
     return mask
 
+
 def split_dataset(annotations):
     im = annotations['images']
     im_names = []
@@ -567,7 +568,6 @@ def evaluate(predicted_mask, image_name):
     sc = (sco+scb)/2
 
     return sc
-
 
 
 if __name__ == '__main__':
