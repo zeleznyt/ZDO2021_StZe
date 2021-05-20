@@ -29,9 +29,8 @@ from skimage.filters import threshold_otsu
 
 HOMEPATH  = '../..'
 IMG_PATH = HOMEPATH  + "/Dataset/images/"
-FEATURE_MOMENTS_PATH = HOMEPATH + '/ZDO2021_StZe/zdo2021/features_moments.pickle'
 ANNOTATION_PATH = HOMEPATH  + "/Dataset/annotations/annotations.json"
-MODEL_PATH = '../models/svm8.pkl'
+MODEL_PATH = os.getenv('VARROA_DATA_PATH_', default=Path(__file__).parent.parent) / 'models/svm8.pkl'
 
 
 SCALE = 2
@@ -39,7 +38,7 @@ FILTR_W = 75
 FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
-FEATURE_MOMENTS_PATH = '../zdo2021/features_moments.pickle'
+FEATURE_MOMENTS_PATH = os.getenv('VARROA_DATA_PATH_', default=Path(__file__).parent) / 'features_moments.pickle'
 FEATURES = ['rgb', 'centroid', 'compact', 'convex']
 
 
@@ -184,7 +183,6 @@ if __name__ == '__main__':
     import preprocess
     import train
     import podpurne_funkce
-
 
 else:
     from . import preprocess
