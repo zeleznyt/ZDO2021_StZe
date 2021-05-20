@@ -156,5 +156,3 @@ def merge_masks(masks):
     for i in range(masks.shape[2]):
         MASK = np.add(MASK, masks[:, :, i])
     return MASK
-
-test_run_random()

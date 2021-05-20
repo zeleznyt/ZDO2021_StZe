@@ -1,5 +1,3 @@
-from . import preprocess
-from . import train
 import json
 import os
 import numpy as np
@@ -25,7 +23,7 @@ from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from skimage.filters import threshold_otsu
 
-from . import podpurne_funkce
+
 
 
 
@@ -176,4 +174,15 @@ def save_model(path, clf):
         pickle.dump(model, file)
 
 
+
+if __name__ == '__main__':
+    import preprocess
+    import train
+    import podpurne_funkce
+
+
+else:
+    from . import preprocess
+    from . import train
+    from . import podpurne_funkce
 
