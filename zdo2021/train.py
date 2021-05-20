@@ -20,6 +20,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from skimage.filters import threshold_otsu
+from . import podpurne_funkce
 
 
 
@@ -59,12 +60,12 @@ class Train():
     def extract_features(self, preprocess_obj, features):
         for name in self.IMAGE_NAMES:
             print('Train; Extract features for image: {}'.format(name))
-            m = prepare_ground_true_masks(self.ANNOTATIONS, name)
+            m = podpurne_funkce.prepare_ground_true_masks(self.ANNOTATIONS, name)
             if type(m) == type(0):
                 print('extract features: skip image {}'.format(name))
                 continue
 
-            gt_mask = merge_masks(m)
+            gt_mask = podpurne_funkce.merge_masks(m)
             gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
             mask_objects_img = gt_mask
 
@@ -90,12 +91,12 @@ class Train():
 
         for name in self.IMAGE_NAMES:
             print('Train; Extract regions for image: {}'.format(name))
-            m = prepare_ground_true_masks(self.ANNOTATIONS, name)
+            m = podpurne_funkce.prepare_ground_true_masks(self.ANNOTATIONS, name)
             if type(m) == type(0):
                 print('extract features: skip image {}'.format(name))
                 continue
 
-            gt_mask = merge_masks(m)
+            gt_mask = podpurne_funkce.merge_masks(m)
             gt_mask = skimage.transform.rotate(gt_mask, -90, resize=True)
             mask_objects_img = gt_mask
 
