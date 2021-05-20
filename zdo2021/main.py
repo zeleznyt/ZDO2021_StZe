@@ -43,9 +43,7 @@ FEATURE_MOMENTS_PATH = '../zdo2021/features_moments.pickle'
 FEATURES = ['rgb', 'centroid', 'compact', 'convex']
 
 
-with open(ANNOTATION_PATH, 'r') as file:
-    ANNOTATIONS = file.read()
-ANNOTATIONS = json.loads(ANNOTATIONS)
+
 
 
 class VarroaDetector():
@@ -172,6 +170,13 @@ def save_model(path, clf):
     model = pickle.dumps(clf)
     with open(path, 'wb') as file:
         pickle.dump(model, file)
+
+
+def load_annotations():
+    with open(ANNOTATION_PATH, 'r') as file:
+        ANNOTATIONS = file.read()
+    ANNOTATIONS = json.loads(ANNOTATIONS)
+    return ANNOTATIONS
 
 
 
