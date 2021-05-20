@@ -21,7 +21,6 @@ from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from skimage.filters import threshold_otsu
 
-from podpurne_funkce import prepare_ground_true_masks, merge_masks, f1score
 
 
 

@@ -1,5 +1,5 @@
-import preprocess
-import train
+from . import preprocess
+from . import train
 import json
 import os
 import numpy as np
@@ -25,7 +25,7 @@ from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from skimage.filters import threshold_otsu
 
-from podpurne_funkce import prepare_ground_true_masks, merge_masks, f1score, visualize
+from . import podpurne_funkce
 
 
 
@@ -41,7 +41,7 @@ FILTR_W = 75
 FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
-FEATURE_MOMENTS_PATH = 'features_moments.pickle'
+FEATURE_MOMENTS_PATH = '../zdo2021/features_moments.pickle'
 FEATURES = ['rgb', 'centroid', 'compact', 'convex']
 
 
@@ -79,9 +79,12 @@ class VarroaDetector():
             filtered_img = self.prep_obj.filtration(mask_img)
             labeled_img = self.prep_obj.labeling(mask_img, filtered_img)
             img_features = self.prep_obj.get_features_from_image(labeled_img, original_img, FEATURES)
-            prediction = self.MODEL.predict(img_features)
-            mask = self.get_masks_from_predictions(labeled_img, prediction)
-            masks = merge_masks(mask)
+            if(len(img_features) > 0):
+                prediction = self.MODEL.predict(img_features)
+                mask = self.get_masks_from_predictions(labeled_img, prediction)
+                masks = podpurne_funkce.merge_masks(mask)
+            else:
+                masks = np.zeros_like(gray_img)
             output[i] = masks
         return output
 
@@ -130,16 +133,16 @@ class VarroaDetector():
 
 
     def evaluate(self, predicted_mask, image_name, annotations):
-        gt = prepare_ground_true_masks(annotations, image_name)
+        gt = podpurne_funkce.prepare_ground_true_masks(annotations, image_name)
         if type(gt) == type(0):
             mm_gt = np.zeros(predicted_mask.shape)
         else:
-            mm_gt = merge_masks(gt)
+            mm_gt = podpurne_funkce.merge_masks(gt)
             mm_gt = skimage.transform.rotate(mm_gt, -90, resize=True)
 
-        mm_pr = merge_masks(predicted_mask)
-        sco = f1score(mm_gt, mm_pr)
-        scb = f1score(1 - mm_gt, 1 - mm_pr)
+        mm_pr = podpurne_funkce.merge_masks(predicted_mask)
+        sco = podpurne_funkce.f1score(mm_gt, mm_pr)
+        scb = podpurne_funkce.f1score(1 - mm_gt, 1 - mm_pr)
         sc = (sco + scb) / 2
 
         return sc
@@ -174,17 +177,3 @@ def save_model(path, clf):
 
 
 
-if __name__ == '__main__':
-    vdd = VarroaDetector()
-    dataset_path = '../tests/test_dataset/'
-
-
-    files = glob.glob(f'{dataset_path}/images/*.jpg')
-
-    cislo_obrazku = np.random.randint(0, len(files))
-    filename = files[cislo_obrazku]
-
-    im = skimage.io.imread(filename)
-    imgs = np.expand_dims(im, axis=0)
-
-    prediction = vdd.predict(imgs)
