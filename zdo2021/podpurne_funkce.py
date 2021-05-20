@@ -104,3 +104,42 @@ def merge_masks(masks):
     for i in range(masks.shape[2]):
         MASK = np.add(MASK, masks[:, :, i])
     return MASK
+
+
+def visualize(original, mask, path):
+    labeled = skimage.measure.label(mask, background=0)
+    props = skimage.measure.regionprops(labeled)
+
+
+    N = len(props)
+    R = 1
+    figs = [0]
+    max_figs = 20
+
+    if(N < 1):
+        return
+
+    if(N > max_figs):
+        R = np.ceil(N/max_figs)
+        N = 20
+
+    plt.figure(figsize=(4 * N, 6 * R))
+
+    k = 1
+    for i in range(1, len(np.unique(labeled))):
+
+        if(props[i-1]):
+            object_prop = props[i - 1]
+            bb = object_prop.bbox
+            object_mask = (labeled == i) * 1
+            object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
+            y, x = object_mask.shape
+            object_mask_3 = np.repeat(object_mask.reshape(y, x, 1), 3, axis=2)
+            color_img = original[bb[0]:bb[2], bb[1]:bb[3]] * object_mask_3
+
+            plt.subplot(R, N, k)
+            plt.imshow(color_img)
+            k += 1
+
+
+        plt.savefig(path)

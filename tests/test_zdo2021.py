@@ -4,13 +4,14 @@ import skimage.io
 import glob
 import numpy as np
 from pathlib import Path
-import zdo2021.main
+import zdo2021
+import skimage.measure
 
 # cd ZDO2021
 # python -m pytest
 
 def test_run_random():
-    vdd = zdo2021.main.VarroaDetector()
+    vdd = zdo2021.VarroaDetector()
 
     # Nastavte si v operačním systém proměnnou prostředí 'VARROA_DATA_PATH' s cestou k datasetu.
     # Pokud není nastavena, využívá se testovací dataset tests/test_dataset
@@ -47,3 +48,6 @@ def f1score(gt_ann, prediction):
 
 def prepare_ground_true_masks(gt_ann, filname):
     pass
+
+
+
