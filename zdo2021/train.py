@@ -25,15 +25,13 @@ from . import podpurne_funkce
 
 
 class Train():
-    def __init__(self, image_names, image_path, annotations_path):
+    def __init__(self, image_names, image_path, annotations):
         self.features_bg = []
         self.features_ob = []
         self.IMAGE_NAMES = image_names
         self.IMAGE_PATH = image_path
+        self.ANNOTATIONS = annotations
 
-        with open(annotations_path, 'r') as file:
-            self.ANNOTATIONS = file.read()
-        self.ANNOTATIONS = json.loads(self.ANNOTATIONS)
 
 
 

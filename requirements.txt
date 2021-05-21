@@ -2,4 +2,6 @@ numpy
 scipy
 scikit-image
 tqdm
-scikit-learn
+Cython >=0.28.5
+OpenMP
+scikit-learn==0.21.3
