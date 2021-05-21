@@ -23,22 +23,22 @@ from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from skimage.filters import threshold_otsu
 
+from . import preprocess
+from . import train
+from . import podpurne_funkce
 
 
 
 
-HOMEPATH  = '../..'
-IMG_PATH = HOMEPATH  + "/Dataset/images/"
-ANNOTATION_PATH = HOMEPATH  + "/Dataset/annotations/annotations.json"
+
 MODEL_PATH = os.getenv('VARROA_DATA_PATH_', default=Path(__file__).parent.parent) / 'models/svm8.pkl'
-
+FEATURE_MOMENTS_PATH = os.getenv('VARROA_DATA_PATH_', default=Path(__file__).parent) / 'features_moments.pickle'
 
 SCALE = 2
 FILTR_W = 75
 FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
-FEATURE_MOMENTS_PATH = os.getenv('VARROA_DATA_PATH_', default=Path(__file__).parent) / 'features_moments.pickle'
 FEATURES = ['rgb', 'centroid', 'compact', 'convex']
 
 
@@ -171,21 +171,9 @@ def save_model(path, clf):
         pickle.dump(model, file)
 
 
-def load_annotations():
-    with open(ANNOTATION_PATH, 'r') as file:
-        ANNOTATIONS = file.read()
-    ANNOTATIONS = json.loads(ANNOTATIONS)
-    return ANNOTATIONS
-
-
-
-if __name__ == '__main__':
-    import preprocess
-    import train
-    import podpurne_funkce
-
-else:
-    from . import preprocess
-    from . import train
-    from . import podpurne_funkce
+def load_annotations(annotation_path):
+    with open(annotation_path, 'r') as file:
+        ann = file.read()
+    ann = json.loads(ann)
+    return ann
 

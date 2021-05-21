@@ -12,13 +12,25 @@ from skimage import filters, exposure
 
 
 def f1score(gt_ann, prediction):
+    if prediction.shape[0] != gt_ann.shape[0]:
+        gt_ann = skimage.transform.rotate(gt_ann, -90, resize=True)
+
+
+    sco = f1class(gt_ann, prediction)
+    scb = f1class(1 - gt_ann, 1 - prediction)
+    sc = (sco + scb) / 2
+
+    return sc
+
+
+
+def f1class(gt_ann, prediction):
     """
     Parameters
     ----------
     gt_ann : 2d array
     prediction : 2d array
     """
-
     tp = 0
     tn = 0
     fp = 0
