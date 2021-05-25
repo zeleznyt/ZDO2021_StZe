@@ -178,10 +178,15 @@ class Preprocess():
                 color_b_rel = np.mean(color_img[:, :, 2]) / np.mean(object_margin[:, :, 2])
                 gray_rel = np.mean(rgb2gray(color_img)) / np.mean(object_margin)
 
+                print(bb[0]-self.MARGIN, bb[2]+self.MARGIN, bb[1]-self.MARGIN, bb[3]+self.MARGIN)
+                print(np.mean(color_img[:, :, 0]), np.mean(object_margin[:, :, 0]))
+
                 obj_f.append((color_r_rel - self.features_moments['color_r_rel'][0]) / self.features_moments['color_r_rel'][1])
                 obj_f.append((color_g_rel - self.features_moments['color_g_rel'][0]) / self.features_moments['color_g_rel'][1])
                 obj_f.append((color_b_rel - self.features_moments['color_b_rel'][0]) / self.features_moments['color_b_rel'][1])
                 obj_f.append((gray_rel - self.features_moments['gray_rel'][0]) / self.features_moments['gray_rel'][1])
+
+
 
             if ('centroid' in selected_features or all):
                 xc = object_prop.local_centroid[0]
@@ -217,7 +222,7 @@ class Preprocess():
                 obj_f.append((corners_3 - self.features_moments['corners_3'][0]) / self.features_moments['corners_3'][1])
 
             features.append(obj_f)
-            #print(obj_f)
+
         return features
 
     def get_proposed_image_regions(self, labeled_img, original_img):

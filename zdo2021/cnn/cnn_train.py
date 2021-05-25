@@ -127,64 +127,14 @@ if __name__ == '__main__':
 
 
 
-    print('###################### TRAIN 1 ######################')
+    print('###################### TRAIN ######################')
 
-    ep = 20
+    ep = 15
     net = varroa_cnn.Net()
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor([class_ratio/10, 1.0]))
+    criterion = nn.CrossEntropyLoss(weight=torch.tensor([class_ratio/batch_size, 1.0]))
     history = train_cnn(criterion, optimizer, ep)
 
-
-    print(net)
-    print('Train set')
-    ac_train = AC(train_loader)
-    print()
-    print('Validation set')
-    ac_val = AC(validation_loader)
-
-    name = '_09'
-    PATH = HOME_PATH + 'log/varoa_net' + name + '.pth'
-    torch.save(net.state_dict(), PATH)
-
-    with open(HOME_PATH + 'log/log' + name + '.json', 'w') as f:
-        log = [name, history, ac_train, ac_val, ep]
-        json.dump(log, f, indent=2)
-
-    print('######################## END ########################')
-
-    print('###################### TRAIN 2 ######################')
-
-    ep = 20
-    net = varroa_cnn.Net()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor([class_ratio / batch_size, 1.0]))
-    history = train_cnn(criterion, optimizer, ep)
-
-    print(net)
-    print('Train set')
-    ac_train = AC(train_loader)
-    print()
-    print('Validation set')
-    ac_val = AC(validation_loader)
-
-    name = '_10'
-    PATH = HOME_PATH + 'log/varoa_net' + name + '.pth'
-    torch.save(net.state_dict(), PATH)
-
-    with open(HOME_PATH + 'log/log' + name + '.json', 'w') as f:
-        log = [name, history, ac_train, ac_val, ep]
-        json.dump(log, f, indent=2)
-
-    print('######################## END ########################')
-
-    print('###################### TRAIN 3 ######################')
-
-    ep = 20
-    net = varroa_cnn.Net()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor([class_ratio, 1.0]))
-    history = train_cnn(criterion, optimizer, ep)
 
     print(net)
     print('Train set')
@@ -202,79 +152,4 @@ if __name__ == '__main__':
         json.dump(log, f, indent=2)
 
     print('######################## END ########################')
-    '''
-    print('###################### TRAIN 4 ######################')
 
-    ep = 20
-    net = varroa_cnn.Net3()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor([class_ratio / batch_size, 1.0]))
-    history = train_cnn(criterion, optimizer, ep)
-
-    print(net)
-    print('Train set')
-    ac_train = AC(train_loader)
-    print()
-    print('Validation set')
-    ac_val = AC(validation_loader)
-
-    name = '_04'
-    PATH = HOME_PATH + 'log/varoa_net' + name + '.pth'
-    torch.save(net.state_dict(), PATH)
-
-    with open(HOME_PATH + 'log/log' + name + '.json', 'w') as f:
-        log = [name, history, ac_train, ac_val, ep]
-        json.dump(log, f, indent=2)
-
-    print('######################## END ########################')
-
-    print('###################### TRAIN 5 ######################')
-
-    ep = 10
-    net = varroa_cnn.Net()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor([class_ratio, 1.0]))
-    history = train_cnn(criterion, optimizer, ep)
-
-    print(net)
-    print('Train set')
-    ac_train = AC(train_loader)
-    print()
-    print('Validation set')
-    ac_val = AC(validation_loader)
-
-    name = '_05'
-    PATH = HOME_PATH + 'log/varoa_net' + name + '.pth'
-    torch.save(net.state_dict(), PATH)
-
-    with open(HOME_PATH + 'log/log' + name + '.json', 'w') as f:
-        log = [name, history, ac_train, ac_val, ep]
-        json.dump(log, f, indent=2)
-
-    print('######################## END ########################')
-
-    print('###################### TRAIN 6 ######################')
-
-    ep = 10
-    net = varroa_cnn.Net3()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-    criterion = nn.CrossEntropyLoss(weight=torch.tensor([class_ratio, 1.0]))
-    history = train_cnn(criterion, optimizer, ep)
-
-    print(net)
-    print('Train set')
-    ac_train = AC(train_loader)
-    print()
-    print('Validation set')
-    ac_val = AC(validation_loader)
-
-    name = '_06'
-    PATH = HOME_PATH + 'log/varoa_net' + name + '.pth'
-    torch.save(net.state_dict(), PATH)
-
-    with open(HOME_PATH + 'log/log' + name + '.json', 'w') as f:
-        log = [name, history, ac_train, ac_val, ep]
-        json.dump(log, f, indent=2)
-
-    print('######################## END ########################')
-'''
