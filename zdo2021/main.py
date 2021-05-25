@@ -1,5 +1,6 @@
 import json
 import os
+from os import path
 import numpy as np
 import glob
 from pathlib import Path
@@ -31,15 +32,18 @@ from . import podpurne_funkce
 
 
 
-MODEL_PATH = os.getenv('VARROA_DATA_PATH_', default=Path(__file__).parent.parent) / 'models/svm8.pkl'
-FEATURE_MOMENTS_PATH = os.getenv('VARROA_DATA_PATH_', default=Path(__file__).parent) / 'features_moments.pickle'
+
+MODEL_PATH = path.join(path.dirname(__file__), '../models/svm8.pkl')
+FEATURE_MOMENTS_PATH = path.join(path.dirname(__file__), 'features_moments.pickle')
+
+
 
 SCALE = 2
 FILTR_W = 75
 FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
-FEATURES = ['rgb', 'centroid', 'compact', 'convex']
+FEATURES = ['rgb', 'centroid', 'compact', 'convex', 'cnn']
 
 
 

@@ -111,14 +111,14 @@ class Train():
             reg_bg = reg_bg + preprocess_obj.get_proposed_image_regions(labeled_background_img, original_img)
             reg_ob = reg_ob + preprocess_obj.get_proposed_image_regions(labeled_objects_img, original_img)
 
-
+        print('bg: {}; ob: {}'.format(len(reg_bg), len(reg_ob)))
         if(len(reg_bg) > 0):
-            with open(folder + '/bg/{}.pkl'.format(str(ind).zfill(3)), 'wb') as f:
+            with open(folder + '/{}.pkl'.format('bg'), 'wb') as f:
                 pickle.dump(reg_bg, f)
                 ind = ind + 1
 
         if (len(reg_ob) > 0):
-            with open(folder + '/ob/{}.pkl'.format(str(ind).zfill(3)), 'wb') as f:
+            with open(folder + '/{}.pkl'.format('ob'), 'wb') as f:
                 pickle.dump(reg_ob, f)
                 ind = ind + 1
 
