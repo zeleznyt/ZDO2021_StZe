@@ -149,7 +149,6 @@ class Preprocess():
                 y, x = object_mask.shape
                 object_mask_3 = np.repeat(object_mask.reshape(y, x, 1), 3, axis=2)
                 color_img = original_img[bb[0]:bb[2], bb[1]:bb[3]] * object_mask_3
-                object_margin = original_img[bb[0]-self.MARGIN:bb[2]+self.MARGIN, bb[1]-self.MARGIN:bb[3]+self.MARGIN]
 
                 color_r = np.mean(color_img[:, :, 0]) / 255
                 color_g = np.mean(color_img[:, :, 1]) / 255
@@ -166,8 +165,12 @@ class Preprocess():
                 object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
                 y, x = object_mask.shape
                 object_mask_3 = np.repeat(object_mask.reshape(y, x, 1), 3, axis=2)
+                object_mask_margin = (labeled_img == i) * 1
+                object_mask_margin = object_mask_margin[bb[0]-self.MARGIN:bb[2]+self.MARGIN, bb[1]-self.MARGIN:bb[3]+self.MARGIN]
+                y_margin, x_margin = object_mask_margin.shape
+                object_mask_3_margin = np.repeat(object_mask_margin.reshape(y_margin, x_margin, 1), 3, axis=2)
                 color_img = original_img[bb[0]:bb[2], bb[1]:bb[3]] * object_mask_3
-                object_margin = original_img[bb[0]-self.MARGIN:bb[2]+self.MARGIN, bb[1]-self.MARGIN:bb[3]+self.MARGIN]
+                object_margin = original_img[bb[0]-self.MARGIN:bb[2]+self.MARGIN, bb[1]-self.MARGIN:bb[3]+self.MARGIN] * object_mask_3_margin
 
                 color_r_rel = np.mean(color_img[:, :, 0]) / np.mean(object_margin[:, :, 0])
                 color_g_rel = np.mean(color_img[:, :, 1]) / np.mean(object_margin[:, :, 1])
