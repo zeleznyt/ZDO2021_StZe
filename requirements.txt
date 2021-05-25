@@ -4,3 +4,7 @@ scikit-image
 tqdm
 cython
 scikit-learn==0.21.3
+pandas
+torch
+torchvision
+torchaudio
