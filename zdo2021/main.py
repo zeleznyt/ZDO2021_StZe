@@ -2,41 +2,14 @@ import json
 import os
 from os import path
 import numpy as np
-import glob
-from pathlib import Path
-
-import sys
-import json
 import pickle
-from datetime import datetime
-from tqdm import tqdm
-
 import skimage.io
-import scipy.signal
-from skimage import filters, exposure, morphology
-from skimage.color import rgb2gray
-from skimage.transform import resize
-
-import sklearn
-from sklearn import svm as svm_module
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from skimage.filters import threshold_otsu
 
 from . import preprocess
-from . import train
 from . import podpurne_funkce
-
-
-
-
-
 
 MODEL_PATH = path.join(path.dirname(__file__), '../models/svm8.pkl')
 FEATURE_MOMENTS_PATH = path.join(path.dirname(__file__), 'features_moments.pickle')
-
-
 
 SCALE = 2
 FILTR_W = 75
@@ -44,24 +17,15 @@ FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
 FEATURES = ['rgb', 'centroid', 'compact', 'convex']
-#FEATURES = ['rgb_relative']
-
-
-
 
 class VarroaDetector():
-
-
     def __init__(self):
         self.MODEL = self.load_model(MODEL_PATH)
         self.prep_obj = preprocess.Preprocess(SCALE, FILTR_W, FILTR_H, THRESHOLD, FILTRATION_MORPHOLOGY, FEATURE_MOMENTS_PATH)
 
-
     def load_model(self, path):
         with open(path, 'rb') as file:
-            #model = pickle.loads(pickle.load(file))
             model = pickle.load(file)
-
         return model
 
     def predict(self, data):
@@ -69,7 +33,6 @@ class VarroaDetector():
         :param data: np.ndarray with shape [pocet_obrazku, vyska, sirka, barevne_kanaly]
         :return: shape [pocet_obrazku, vyska, sirka], 0 - nic, 1 - varroa destructor
         """
-
         output = np.zeros(data.shape[0:3])
         for i in range(len(output)):
             original_img, gray_img = self.prep_obj.img_to_gray(data[i])
@@ -97,7 +60,6 @@ class VarroaDetector():
 
         return (labeled_img, preprocess_obj.get_features_from_image(labeled_img, original_img, features) )
 
-
     def models_prdict(self, models, image_path, image_names, features, preprocess_obj, annotations):
         models_results = [0] * len(models)
         for name in image_names:
@@ -112,7 +74,6 @@ class VarroaDetector():
             models_results[i] = models_results[i]/len(image_names)
 
         return models_results
-
 
     def get_masks_from_predictions(self, labeled_img, labels):
         N = int(np.sum(labels))
@@ -130,7 +91,6 @@ class VarroaDetector():
 
         return mask
 
-
     def evaluate(self, predicted_mask, image_name, annotations):
         gt = podpurne_funkce.prepare_ground_true_masks(annotations, image_name)
         if type(gt) == type(0):
@@ -145,7 +105,6 @@ class VarroaDetector():
         sc = (sco + scb) / 2
 
         return sc
-
 
 def split_dataset(annotations):
     im = annotations['images']
@@ -174,10 +133,8 @@ def save_model(path, clf):
     with open(path, 'wb') as file:
         pickle.dump(model, file)
 
-
 def load_annotations(annotation_path):
     with open(annotation_path, 'r') as file:
         ann = file.read()
     ann = json.loads(ann)
     return ann
-

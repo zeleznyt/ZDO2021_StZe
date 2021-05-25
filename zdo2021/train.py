@@ -1,28 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
-
 import os
-import sys
-import json
 import pickle
-from datetime import datetime
-from tqdm import tqdm
-
 import skimage.io
-import scipy.signal
-from skimage import filters, exposure, morphology
-from skimage.color import rgb2gray
-from skimage.transform import resize
-
-import sklearn
-from sklearn import svm as svm_module
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from skimage.filters import threshold_otsu
 from . import podpurne_funkce
-
-
 
 class Train():
     def __init__(self, image_names, image_path, annotations):
@@ -31,10 +12,6 @@ class Train():
         self.IMAGE_NAMES = image_names
         self.IMAGE_PATH = image_path
         self.ANNOTATIONS = annotations
-
-
-
-
 
     def fit_models(self, models):
         print('start model fit')
@@ -50,10 +27,7 @@ class Train():
         for model in models:
             model.fit(X, y)
 
-
         return models
-
-
 
     def extract_features(self, preprocess_obj, features):
         for name in self.IMAGE_NAMES:
@@ -79,7 +53,6 @@ class Train():
 
             self.features_bg = self.features_bg + preprocess_obj.get_features_from_image(labeled_background_img, original_img, features)
             self.features_ob = self.features_ob + preprocess_obj.get_features_from_image(labeled_objects_img, original_img, features)
-
 
     def save_proposed_regions(self, preprocess_obj, folder):
 
@@ -121,4 +94,3 @@ class Train():
             with open(folder + '/{}.pkl'.format('ob'), 'wb') as f:
                 pickle.dump(reg_ob, f)
                 ind = ind + 1
-

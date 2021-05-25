@@ -1,30 +1,17 @@
 import numpy as np
-from matplotlib import pyplot as plt
 from .cnn import cnn_predict
-
 import os
-import sys
-import json
 import pickle
-from datetime import datetime
 from tqdm import tqdm
-
 import skimage.io
+import skimage
 import scipy.signal
 from skimage import filters, exposure, morphology
 from skimage.color import rgb2gray
 from skimage.transform import resize
 import skimage.feature
-
 import sklearn
-from sklearn import svm as svm_module
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
 from skimage.filters import threshold_otsu
-
-
-
 
 
 class Preprocess():
@@ -39,8 +26,6 @@ class Preprocess():
         with open(feature_moments_path, 'rb') as file:
             self.features_moments = pickle.load(file)
 
-
-
     def load_img(self, path):
         # nacteni obrazku
         original_img = skimage.io.imread(path)  # 0..255
@@ -54,7 +39,6 @@ class Preprocess():
         gray_img = rgb2gray(original_img)  # 0..1
 
         return (original_img, gray_img)
-
 
     def normalization(self, gray_img):
         # normalizace osvětlení
@@ -75,7 +59,6 @@ class Preprocess():
 
         return (normalized_img, conv_img)
 
-
     def thresholding(self, normalized_img):
         if(self.THRESHOLD > 0):
             # prahování, ponechat THRESHOLD/100 % nejtmavsich
@@ -95,7 +78,6 @@ class Preprocess():
 
         return mask_img
 
-
     def filtration(self, mask_img):
         # filtrace
         mask_img = mask_img.astype(bool)
@@ -109,7 +91,6 @@ class Preprocess():
 
         return filtered_img
 
-
     def labeling(self, mask_img, filtered_img):
         # "obarveni"
         labels_b_f = skimage.measure.label(mask_img, background=0)
@@ -118,12 +99,10 @@ class Preprocess():
         print('objects: {} -> {}'.format(len(np.unique(labels_b_f)) - 1, len(np.unique(labels)) - 1))
         return labels
 
-
     def separate_true_objects(self, mask_img, gt_mask):
         background_img = np.multiply((1 - gt_mask), mask_img)
         # objects_img = np.multiply( gt_mask, mask_img )
         return background_img  # (background_img, objects_img)
-
 
     def get_features_from_image(self, labeled_img, original_img, selected_features=[]):
         # extrakce priznaku
@@ -144,7 +123,7 @@ class Preprocess():
             bb = object_prop.bbox
             obj_f = []
 
-            if ('rgb' in selected_features or all):
+            if 'rgb' in selected_features or all:
                 object_mask = (labeled_img == i) * 1
                 object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
                 y, x = object_mask.shape
@@ -161,7 +140,7 @@ class Preprocess():
                 obj_f.append((color_b - self.features_moments['color_b'][0]) / self.features_moments['color_b'][1])
                 obj_f.append((gray - self.features_moments['gray'][0]) / self.features_moments['gray'][1])
 
-            if ('rgb_relative' in selected_features or all):
+            if 'rgb_relative' in selected_features or all:
                 object_mask = (labeled_img == i) * 1
                 object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
                 y, x = object_mask.shape
@@ -191,15 +170,10 @@ class Preprocess():
                 color_b_rel = (np.mean(color_img[:, :, 2]) / 255) / (np.mean(object_margin[:, :, 2]) / 255)
                 gray_rel = (np.mean(rgb2gray(color_img / 255))) / (np.mean(object_margin) / 255)
 
-                print(bb[0]-self.MARGIN, bb[2]+self.MARGIN, bb[1]-self.MARGIN, bb[3]+self.MARGIN)
-                print(np.mean(color_img[:, :, 0]), np.mean(object_margin[:, :, 0]))
-
                 obj_f.append((color_r_rel - self.features_moments['color_r_rel'][0]) / self.features_moments['color_r_rel'][1])
                 obj_f.append((color_g_rel - self.features_moments['color_g_rel'][0]) / self.features_moments['color_g_rel'][1])
                 obj_f.append((color_b_rel - self.features_moments['color_b_rel'][0]) / self.features_moments['color_b_rel'][1])
                 obj_f.append((gray_rel - self.features_moments['gray_rel'][0]) / self.features_moments['gray_rel'][1])
-
-
 
             if ('centroid' in selected_features or all):
                 xc = object_prop.local_centroid[0]

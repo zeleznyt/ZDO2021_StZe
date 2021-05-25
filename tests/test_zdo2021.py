@@ -44,7 +44,7 @@ def test_run_random():
         ann = file.read()
 
     gt_ann = json.loads(ann)
-    name = filename.split('\\')
+    name = filename.split('/')
 
     ground_true_masks = prepare_ground_true_masks(gt_ann, name[-1])
     ground_true_masks = merge_masks(ground_true_masks)
@@ -156,3 +156,4 @@ def merge_masks(masks):
     for i in range(masks.shape[2]):
         MASK = np.add(MASK, masks[:, :, i])
     return MASK
+

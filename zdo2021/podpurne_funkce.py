@@ -1,28 +1,18 @@
 import numpy as np
 from matplotlib import pyplot as plt
-
-import json
 from skimage.draw import polygon
-
 import skimage.io
-from matplotlib import pyplot as plt
-import scipy.signal
-import numpy as np
-from skimage import filters, exposure
 
 
 def f1score(gt_ann, prediction):
     if prediction.shape[0] != gt_ann.shape[0]:
         gt_ann = skimage.transform.rotate(gt_ann, -90, resize=True)
 
-
     sco = f1class(gt_ann, prediction)
     scb = f1class(1 - gt_ann, 1 - prediction)
     sc = (sco + scb) / 2
 
     return sc
-
-
 
 def f1class(gt_ann, prediction):
     """
@@ -62,7 +52,6 @@ def f1class(gt_ann, prediction):
     # print("TP: {}, TN: {}, FP: {}, FN: {}".format(tp, tn, fp, fn))
     # print("Precision: {}, Recall: {}, F1: {}".format(precision, recall, F1))
     return F1
-
 
 def prepare_ground_true_masks(gt_ann, filname):
     # get image id, shape
@@ -107,7 +96,6 @@ def prepare_ground_true_masks(gt_ann, filname):
 
     return masks
 
-
 def merge_masks(masks):
     if len(masks.shape) < 3:
         return masks
@@ -117,15 +105,12 @@ def merge_masks(masks):
         MASK = np.add(MASK, masks[:, :, i])
     return MASK
 
-
 def visualize(original, mask, path):
     labeled = skimage.measure.label(mask, background=0)
     props = skimage.measure.regionprops(labeled)
 
-
     N = len(props)
     R = 1
-    figs = [0]
     max_figs = 20
 
     if(N < 1):
@@ -153,20 +138,19 @@ def visualize(original, mask, path):
             plt.imshow(color_img)
             k += 1
 
-
         plt.savefig(path)
 
 def visualize_prediction(gt_mask, predicted_mask, original, name):
 
     visualized_result = np.zeros((np.size(gt_mask, 0), np.size(gt_mask, 1), 3))
-    visualized_result[:, :, 0] = predicted_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
-    visualized_result[:, :, 1] = np.logical_and(gt_mask, predicted_mask).astype(int)
-    visualized_result[:, :, 2] = gt_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
+    visualized_result[:,:,0] = predicted_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
+    visualized_result[:,:,1] = np.logical_and(gt_mask, predicted_mask).astype(int)
+    visualized_result[:,:,2] = gt_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
 
     visualized_result = visualized_result * 255
     for i in range(np.size(gt_mask, 0)):
         for j in range(np.size(gt_mask, 1)):
-            if visualized_result[i,j, 0] == 0 and visualized_result[i,j, 1] == 0 and visualized_result[i,j, 2] == 0:
-                visualized_result[i,j, :] = original[i,j, :]
+            if visualized_result[i,j,0] == 0 and visualized_result[i,j,1] == 0 and visualized_result[i,j, 2] == 0:
+                visualized_result[i,j,:] = original[i,j,:]
 
     skimage.io.imsave(name + '_predicted_mask_img_.jpg', visualized_result)

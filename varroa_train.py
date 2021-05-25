@@ -1,14 +1,10 @@
-from zdo2021 import podpurne_funkce
 from zdo2021 import main
 from zdo2021 import preprocess
 from zdo2021 import train
-import os
 import skimage.io
-import skimage.transform
-import numpy as np
 from sklearn import svm as svm_module
 from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import NearestCentroid, KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 
 HOMEPATH  = '..'
@@ -24,7 +20,6 @@ THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
 FEATURES = ['rgb', 'centroid', 'compact', 'convex', 'cnn']
 
-
 train_names, validation_names = main.split_dataset(ANNOTATIONS)
 remove = ['Original_1298_image.jpg', 'Original_1299_image.jpg', 'Original_1300_image.jpg', 'Original_1301_image.jpg',
           'Original_1303_image.jpg', 'Original_1304_image.jpg', ]
@@ -35,7 +30,7 @@ for r in remove:
     if r in validation_names:
         validation_names.remove(r)
 
-    # models
+# models
 svm1 = svm_module.SVC(kernel='linear')
 svm2 = svm_module.SVC(kernel='poly', degree=2)
 svm6 = svm_module.SVC(kernel='rbf', gamma=0.1, C=0.01)
@@ -76,13 +71,9 @@ tr = train.Train(train_names, IMG_PATH, ANNOTATIONS)
 tr.extract_features(prep, FEATURES)
 trained_models = tr.fit_models(models)
 
-
 #save models
-'''
-for i, m in enumerate(trained_models):
-    main.save_model(MODEL_PATH + models_names[i] + '.pkl' , m)
-'''
-
+#for i, m in enumerate(trained_models):
+#    main.save_model(MODEL_PATH + models_names[i] + '.pkl' , m)
 
 #predict on training set
 predict = main.VarroaDetector()
@@ -91,13 +82,9 @@ print('Training set results')
 for i in range(len(score)):
     print('Model: {}, F1: {}'.format(models_names[i], score[i]))
 
-
-
-
 # predict on validation set
 predict = main.VarroaDetector()
 score = predict.models_prdict(trained_models, IMG_PATH, validation_names, FEATURES, prep, ANNOTATIONS)
 print('Validation set results')
 for i in range(len(score)):
     print('Model: {}, F1: {}'.format(models_names[i], score[i]))
-
