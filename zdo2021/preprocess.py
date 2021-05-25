@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from .cnn import cnn_predict
 
 import os
 import sys
@@ -96,6 +97,8 @@ class Preprocess():
 
     def filtration(self, mask_img):
         # filtrace
+        mask_img = mask_img.astype(bool)
+        mask_img = skimage.morphology.remove_small_holes(mask_img)
         kernel = np.ones([3, 3])
         filtered_img = mask_img
         for i in range(self.FILTRATION_MORPHOLOGY):
@@ -129,6 +132,10 @@ class Preprocess():
         all = False
         if not selected_features:
             all = True
+        if 'cnn' in selected_features:
+            this_dir, this_filename = os.path.split(__file__)
+            DATA_PATH = os.path.join(this_dir, "cnn", "log", "varoa_net_03.pth")
+            net = cnn_predict.load_net(DATA_PATH)
 
         # for i in range(1, len(np.unique(labeled_img)) ):
         for i in tqdm(range(1, len(np.unique(labeled_img)))):
@@ -180,6 +187,14 @@ class Preprocess():
             if ('convex' in selected_features or all):
                 convex = (object_prop.area) / object_prop.convex_area
                 obj_f.append((convex - self.features_moments['convex'][0]) / self.features_moments['convex'][1])
+
+
+            if('cnn' in selected_features or all ):
+                color_img = original_img[bb[0]:bb[2], bb[1]:bb[3]]
+                image = color_img.copy()
+                out = cnn_predict.predict(net, image)
+                obj_f.append(out[0])
+                obj_f.append(out[1])
 
             if ('corners' in selected_features or all):
                 corners_2 = len(skimage.feature.corner_peaks(skimage.feature.corner_harris(object_mask), min_distance=2))

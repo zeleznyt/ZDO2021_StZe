@@ -2,4 +2,5 @@ numpy
 scipy
 scikit-image
 tqdm
-scikit-learn==0.20.1
+cython
+scikit-learn==0.21.3
