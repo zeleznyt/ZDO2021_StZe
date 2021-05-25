@@ -166,17 +166,30 @@ class Preprocess():
                 object_mask = object_mask[bb[0]:bb[2], bb[1]:bb[3]]
                 y, x = object_mask.shape
                 object_mask_3 = np.repeat(object_mask.reshape(y, x, 1), 3, axis=2)
-                object_mask_margin = (labeled_img == i) * 1
-                object_mask_margin = object_mask_margin[bb[0]-self.MARGIN:bb[2]+self.MARGIN, bb[1]-self.MARGIN:bb[3]+self.MARGIN]
-                y_margin, x_margin = object_mask_margin.shape
-                object_mask_3_margin = np.repeat(object_mask_margin.reshape(y_margin, x_margin, 1), 3, axis=2)
                 color_img = original_img[bb[0]:bb[2], bb[1]:bb[3]] * object_mask_3
-                object_margin = original_img[bb[0]-self.MARGIN:bb[2]+self.MARGIN, bb[1]-self.MARGIN:bb[3]+self.MARGIN] * object_mask_3_margin
 
-                color_r_rel = np.mean(color_img[:, :, 0]) / np.mean(object_margin[:, :, 0])
-                color_g_rel = np.mean(color_img[:, :, 1]) / np.mean(object_margin[:, :, 1])
-                color_b_rel = np.mean(color_img[:, :, 2]) / np.mean(object_margin[:, :, 2])
-                gray_rel = np.mean(rgb2gray(color_img)) / np.mean(object_margin)
+                if bb[0] - self.MARGIN < 0:
+                    y1 = 0
+                else:
+                    y1 = bb[0] - self.MARGIN
+                if bb[1] - self.MARGIN < 0:
+                    x1 = 0
+                else:
+                    x1 = bb[1] - self.MARGIN
+                if bb[2] + self.MARGIN > np.size(original_img, 0):
+                    y2 = np.size(original_img, 0)
+                else:
+                    y2 = bb[2] + self.MARGIN
+                if bb[3] + self.MARGIN > np.size(original_img, 1):
+                    x2 = np.size(original_img, 1)
+                else:
+                    x2 = bb[3] + self.MARGIN
+                object_margin = original_img[y1:y2, x1:x2, :]
+
+                color_r_rel = (np.mean(color_img[:, :, 0]) / 255) / (np.mean(object_margin[:, :, 0]) / 255)
+                color_g_rel = (np.mean(color_img[:, :, 1]) / 255) / (np.mean(object_margin[:, :, 1]) / 255)
+                color_b_rel = (np.mean(color_img[:, :, 2]) / 255) / (np.mean(object_margin[:, :, 2]) / 255)
+                gray_rel = (np.mean(rgb2gray(color_img / 255))) / (np.mean(object_margin) / 255)
 
                 print(bb[0]-self.MARGIN, bb[2]+self.MARGIN, bb[1]-self.MARGIN, bb[3]+self.MARGIN)
                 print(np.mean(color_img[:, :, 0]), np.mean(object_margin[:, :, 0]))
