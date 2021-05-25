@@ -32,6 +32,7 @@ class Preprocess():
         self.FILTR_W = filtr_w
         self.THRESHOLD = threshold
         self.FILTRATION_MORPHOLOGY = morphology
+        self.MARGIN = 20
 
         with open(feature_moments_path, 'rb') as file:
             self.features_moments = pickle.load(file)
@@ -141,16 +142,27 @@ class Preprocess():
                 y, x = object_mask.shape
                 object_mask_3 = np.repeat(object_mask.reshape(y, x, 1), 3, axis=2)
                 color_img = original_img[bb[0]:bb[2], bb[1]:bb[3]] * object_mask_3
+                object_margin = original_img[bb[0]-self.MARGIN:bb[2]+self.MARGIN, bb[1]-self.MARGIN:bb[3]+self.MARGIN]
 
                 color_r = np.mean(color_img[:, :, 0]) / 255
                 color_g = np.mean(color_img[:, :, 1]) / 255
                 color_b = np.mean(color_img[:, :, 2]) / 255
                 gray = np.mean(rgb2gray(color_img / 255))
 
+                color_r_rel = np.mean(color_img[:, :, 0]) / np.mean(object_margin[:, :, 0])
+                color_g_rel = np.mean(color_img[:, :, 1]) / np.mean(object_margin[:, :, 1])
+                color_b_rel = np.mean(color_img[:, :, 2]) / np.mean(object_margin[:, :, 2])
+                gray_rel = np.mean(rgb2gray(color_img)) / np.mean(object_margin)
+
                 obj_f.append((color_r - self.features_moments['color_r'][0]) / self.features_moments['color_r'][1])
                 obj_f.append((color_g - self.features_moments['color_g'][0]) / self.features_moments['color_g'][1])
                 obj_f.append((color_b - self.features_moments['color_b'][0]) / self.features_moments['color_b'][1])
                 obj_f.append((gray - self.features_moments['gray'][0]) / self.features_moments['gray'][1])
+
+                obj_f.append((color_r_rel - self.features_moments['color_r_rel'][0]) / self.features_moments['color_r_rel'][1])
+                obj_f.append((color_g_rel - self.features_moments['color_g_rel'][0]) / self.features_moments['color_g_rel'][1])
+                obj_f.append((color_b_rel - self.features_moments['color_b_rel'][0]) / self.features_moments['color_b_rel'][1])
+                obj_f.append((gray_rel - self.features_moments['gray_rel'][0]) / self.features_moments['gray_rel'][1])
 
             if ('centroid' in selected_features or all):
                 xc = object_prop.local_centroid[0]
@@ -168,6 +180,13 @@ class Preprocess():
             if ('convex' in selected_features or all):
                 convex = (object_prop.area) / object_prop.convex_area
                 obj_f.append((convex - self.features_moments['convex'][0]) / self.features_moments['convex'][1])
+
+            if ('corners' in selected_features or all):
+                corners_2 = len(skimage.feature.corner_peaks(skimage.feature.corner_harris(object_mask), min_distance=2))
+                corners_3 = len(skimage.feature.corner_peaks(skimage.feature.corner_harris(object_mask), min_distance=3))
+
+                obj_f.append((corners_2 - self.features_moments['corners_2'][0]) / self.features_moments['corners_2'][1])
+                obj_f.append((corners_3 - self.features_moments['corners_3'][0]) / self.features_moments['corners_3'][1])
 
             features.append(obj_f)
 
