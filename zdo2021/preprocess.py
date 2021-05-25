@@ -14,6 +14,7 @@ import scipy.signal
 from skimage import filters, exposure, morphology
 from skimage.color import rgb2gray
 from skimage.transform import resize
+import skimage.feature
 
 import sklearn
 from sklearn import svm as svm_module
@@ -213,7 +214,7 @@ class Preprocess():
                 obj_f.append((corners_3 - self.features_moments['corners_3'][0]) / self.features_moments['corners_3'][1])
 
             features.append(obj_f)
-
+            #print(obj_f)
         return features
 
     def get_proposed_image_regions(self, labeled_img, original_img):

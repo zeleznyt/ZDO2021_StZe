@@ -43,8 +43,8 @@ FILTR_W = 75
 FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
-FEATURES = ['rgb', 'centroid', 'compact', 'convex', 'cnn']
-
+FEATURES = ['rgb', 'centroid', 'compact', 'convex']
+#FEATURES = ['rgb_relative']
 
 
 

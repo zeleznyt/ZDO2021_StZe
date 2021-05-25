@@ -155,3 +155,21 @@ def visualize(original, mask, path):
 
 
         plt.savefig(path)
+
+def visualize_prediction(gt_mask, predicted_mask, original, name):
+
+    #plt.figure()
+
+    visualized_result = np.zeros((np.size(gt_mask, 0), np.size(gt_mask, 1), 3))
+    #visualized_result = original
+    visualized_result[:, :, 0] = predicted_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
+    visualized_result[:, :, 1] = np.logical_and(gt_mask, predicted_mask).astype(int)
+    visualized_result[:, :, 2] = gt_mask*(1-np.logical_and(gt_mask, predicted_mask).astype(int))
+    for i in range(np.size(gt_mask, 0)):
+        for j in range(np.size(gt_mask, 1)):
+            if visualized_result[i,j, 0] == 0:
+                visualized_result[i,j, :] = original[i,j, :]
+
+    #plt.imshow(visualized_result)
+    #plt.savefig(name + '_predicted_mask_img_.png')
+    skimage.io.imsave(name + '_predicted_mask_img_.png', visualized_result)
