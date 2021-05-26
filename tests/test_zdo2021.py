@@ -44,18 +44,19 @@ def test_run_random():
         ann = file.read()
 
     gt_ann = json.loads(ann)
-    name = filename.split('/')
+    head, name = os.path.split(filename)
 
-    ground_true_masks = prepare_ground_true_masks(gt_ann, name[-1])
+
+    ground_true_masks = prepare_ground_true_masks(gt_ann, name)
     ground_true_masks = merge_masks(ground_true_masks)
 
     assert f1score(ground_true_masks, prediction[0]) > 0.55
 
 
+
 def f1score(gt_ann, prediction):
     if prediction.shape[0] != gt_ann.shape[0]:
         gt_ann = skimage.transform.rotate(gt_ann, -90, resize=True)
-
 
     sco = f1class(gt_ann, prediction)
     scb = f1class(1 - gt_ann, 1 - prediction)
@@ -156,4 +157,3 @@ def merge_masks(masks):
     for i in range(masks.shape[2]):
         MASK = np.add(MASK, masks[:, :, i])
     return MASK
-
