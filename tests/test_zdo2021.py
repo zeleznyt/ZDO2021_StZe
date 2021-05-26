@@ -53,6 +53,7 @@ def test_run_random():
     assert f1score(ground_true_masks, prediction[0]) > 0.55
 
 
+
 def f1score(gt_ann, prediction):
     if prediction.shape[0] != gt_ann.shape[0]:
         gt_ann = skimage.transform.rotate(gt_ann, -90, resize=True)

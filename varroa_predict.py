@@ -27,17 +27,17 @@ for name in files:
     im = skimage.io.imread(IMG_PATH + name)
     imgs = np.expand_dims(im, axis=0)
     prediction = vdd.predict(imgs)
-    podpurne_funkce.visualize(im, prediction[0], 'log/predict/{}'.format(name))
+    #podpurne_funkce.visualize(im, prediction[0], 'log/predict/{}'.format(name))
 
     mask = podpurne_funkce.prepare_ground_true_masks(ANNOTATIONS, name)
     mask = podpurne_funkce.merge_masks(mask)
     mask = skimage.transform.rotate(mask, -90, resize=True)
-    podpurne_funkce.visualize(im, mask, 'log/gt/{}'.format(name))
+    #podpurne_funkce.visualize(im, mask, 'log/gt/{}'.format(name))
 
     f1 = podpurne_funkce.f1score(mask, prediction[0])
     F1.append(f1)
     print('image: {}; F1: {}'.format(name, f1))
-    podpurne_funkce.visualize_prediction(mask, prediction[0], im, 'log/' + name)
+    #podpurne_funkce.visualize_prediction(mask, prediction[0], im, 'log/' + name)
 
 print()
 print('F1: {}'.format(np.mean(F1)))
