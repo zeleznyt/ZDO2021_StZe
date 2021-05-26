@@ -3,4 +3,4 @@
 Semetrální práce z předmětu [ZDO v roce 2021](https://nbviewer.jupyter.org/github/mjirik/ZDO/blob/master/ZDOsem2021.ipynb)
 
 Autoři:
-Miroslav Jiřík a Ivan Gruber
+Jakub Straka a Tomáš Železný
