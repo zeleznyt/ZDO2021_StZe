@@ -24,7 +24,7 @@ if __name__ == '__main__':
          transforms.Resize((32,32)),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    HOME_PATH = 'auto/plzen1/home/strakajk/ZDO/cnn/'
+
     HOME_PATH = ''
 
     bg_training_dataset = VarroaImageDataset(train = False, img_dir = HOME_PATH + 'data/bg_train.pkl', transform=transform)
@@ -35,16 +35,7 @@ if __name__ == '__main__':
 
     classes = ('background', 'varroa')
 
-    '''
-    ob_ration = int(len(ob_dataset)*0.2)
-    bg_ration = int(len(bg_dataset)*0.2)
 
-    ob_split = random_split(ob_dataset, [int(ob_ration), int(len(ob_dataset) - ob_ration)], generator=torch.Generator().manual_seed(42))
-    bg_split = random_split(bg_dataset, [int(bg_ration), int(len(bg_dataset) - bg_ration)], generator=torch.Generator().manual_seed(42))
-    
-    validation_dataset = torch.utils.data.ConcatDataset( [ob_split[0], bg_split[0]] )
-    train_dataset = torch.utils.data.ConcatDataset( [ob_split[1], bg_split[1]] )
-    '''
 
     train_dataset = torch.utils.data.ConcatDataset([bg_training_dataset,  ob_training_dataset])
     validation_dataset = torch.utils.data.ConcatDataset([bg_validation_dataset, ob_validation_dataset])
@@ -143,7 +134,7 @@ if __name__ == '__main__':
     print('Validation set')
     ac_val = AC(validation_loader)
 
-    name = '_11'
+    name = '_01'
     PATH = HOME_PATH + 'log/varoa_net' + name + '.pth'
     torch.save(net.state_dict(), PATH)
 

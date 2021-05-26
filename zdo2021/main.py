@@ -8,7 +8,7 @@ import skimage.io
 from . import preprocess
 from . import podpurne_funkce
 
-MODEL_PATH = path.join(path.dirname(__file__), '../models/svm8.pkl')
+MODEL_PATH = path.join(path.dirname(__file__), '../models/mlp1.pkl')
 FEATURE_MOMENTS_PATH = path.join(path.dirname(__file__), 'features_moments.pickle')
 
 SCALE = 2
@@ -16,7 +16,7 @@ FILTR_W = 75
 FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
-FEATURES = ['rgb', 'centroid', 'compact', 'convex']
+FEATURES = ['rgb', 'centroid', 'compact', 'convex', 'cnn']
 
 class VarroaDetector():
     def __init__(self):
@@ -128,10 +128,21 @@ def split_dataset(annotations):
 
     return (train_names, val_names)
 
+def remove(train_names, val_names):
+
+    remove = ['Original_1298_image.jpg', 'Original_1299_image.jpg', 'Original_1300_image.jpg',
+              'Original_1301_image.jpg', 'Original_1303_image.jpg', 'Original_1304_image.jpg', ]
+    for r in remove:
+        if r in train_names:
+            train_names.remove(r)
+        if r in val_names:
+            val_names.remove(r)
+
+    return (train_names, val_names)
+
 def save_model(path, clf):
-    model = pickle.dumps(clf)
     with open(path, 'wb') as file:
-        pickle.dump(model, file)
+        pickle.dump(clf, file)
 
 def load_annotations(annotation_path):
     with open(annotation_path, 'r') as file:

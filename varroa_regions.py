@@ -16,21 +16,14 @@ FILTR_H = 75
 THRESHOLD = 10
 FILTRATION_MORPHOLOGY = 3
 
-train_names, validation_names = main.split_dataset(ANNOTATIONS)
-remove = ['Original_1298_image.jpg', 'Original_1299_image.jpg', 'Original_1300_image.jpg', 'Original_1301_image.jpg',
-          'Original_1303_image.jpg', 'Original_1304_image.jpg', ]
-
-for r in remove:
-    if r in train_names:
-        train_names.remove(r)
-    if r in validation_names:
-        validation_names.remove(r)
+train_names, val_names = main.split_dataset(ANNOTATIONS)
+(train_names, val_names) = main.remove(train_names, val_names)
 
 # preprocessing object
 prep = preprocess.Preprocess(SCALE, FILTR_W, FILTR_H, THRESHOLD, FILTRATION_MORPHOLOGY, FEATURE_MOMENTS_PATH)
 
 # validation  models
-val = train.Train(validation_names, IMG_PATH, ANNOTATIONS)
+val = train.Train(val_names, IMG_PATH, ANNOTATIONS)
 val.save_proposed_regions(prep, 'log/val')
 
 # train models
